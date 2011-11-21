@@ -1,0 +1,149 @@
+	<script type="text/javascript">
+	$(document).ready(function() {	
+					$('#list_user').dataTable( {
+					"sPaginationType": "full_numbers",
+					 "aaData": [	
+								<% table.forEach (function(users){ %>
+								["<%= users.lastname %> <%= users.name %>","<a href='/<%= user.role %>/users/<%= users.username %>'><%= users.username %></a>","<%= users.role %>","<%= users.position %>","<%= users.company %>"],
+								<% }) %>
+								],
+					"aoColumns": [
+									{ "sTitle": "Фамилия Имя" },
+									{ "sTitle": "Login" },
+									{ "sTitle": "Role" },
+									{ "sTitle": "Должность", "sClass": "center" },
+									{
+										"sTitle": "Компания",
+										"sClass": "center",
+										"fnRender": function(obj) {
+											var sReturn = obj.aData[ obj.iDataColumn ];
+											if ( sReturn == "0" ) {
+												sReturn = "<b>0</b>";
+											}
+											return sReturn;
+										}
+									}
+								]
+					});
+					
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+					
+					$("#save").validate({
+					   submitHandler: function() {
+						flag_valid = true;
+					   }
+					});
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#save *').attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+
+					
+					$('#save').submit(function(){
+							if(flag_valid === true){
+								flag_valid = false;
+								$('#pbdiv').show();
+								var array_table = $('#save').serializeArray();
+								$('#save *').attr("disabled", true);
+								$('#status').text('Подключение к серверу.').css('color','#333');
+								$('#progressbar').progressbar({ value: 0 });
+								buff_msg = 'new_user';
+								buff_arr = array_table;
+								socket.emit('new_user', array_table);
+							}
+							return false;
+					});
+					
+					socket.on('start_save', function () {
+					buff_msg = 'not';
+					$('#status').text('Обработка данных на сервере.');
+					$('#progressbar').progressbar({ value: 35 });
+						});
+									
+					socket.on('end_save', function () {
+							$('#status').text('Данные на сервере сохраненны.');
+							$('#progressbar').progressbar({ value: 70 });
+							$('#save *').attr("disabled", false);
+							var array_table = $('#save').serializeArray();
+							$('#list_user').dataTable().fnAddData( [
+							array_table[0].value+" "+array_table[1].value,
+							"<a href='/<%= user.role %>/users/"+array_table[5].value+"'>"+array_table[5].value+"</a>",
+							array_table[4].value,
+							array_table[2].value,
+							array_table[3].value
+							]);
+							$('#status').text('Добовление данных к таблице.');
+							$('#save')[0].reset();
+							$('#progressbar').progressbar({ value: 100 });
+							setTimeout(function() {
+								$('#pbdiv').hide();
+							}, 1000);
+						});
+					
+					socket.on('err_save', function (err) {
+						$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+						setTimeout(function() {
+								$('#save *').attr("disabled", false);
+								$('#pbdiv').hide();
+							}, 4000);
+					});
+					
+			});
+	</script>
+	<%- partial('status') %>
+	<h1>Новый пользователь</h1>
+	<form method="post" id="save" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	  <tr>
+		<td width="10%" align="right">Фамилия*:</td>
+		<td width="90%"><input name="lastname" type="text" size="40" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Имя:</td>
+		<td><input name="name" type="text" size="40"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Должность:</td>
+		<td><input name="position" type="text" size="40"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Компания:</td>
+		<td><select name="company">
+		<% listcustomers.forEach (function(customers){ %>
+			<option value="<%= customers.ID %>"><%= customers.NAME_SOB %>&nbsp;&laquo;<%= customers.NAME %>&raquo;</option>
+			<% }) %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right">Role:</td>
+		<td><select name="role" >
+			<option value="manager">manager&nbsp;&nbsp;</option>
+			<option value="admin">admin&nbsp;&nbsp;</option>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right">Логин:</td>
+		<td><input name="username" type="text" size="20" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Пароль:</td>
+		<td><input type="password" name="password" SIZE="20" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>
+	<h1>Список пользователей</h1>
+	<div id="demo">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_user"></table>
+
+	</div>
+	<div class="spacer"></div>
