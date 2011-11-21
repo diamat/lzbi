@@ -1,0 +1,125 @@
+	<script type="text/javascript">
+	$(document).ready(function() {	
+					
+					$("input[name='INDEX_P']").mask("999999");
+					
+					
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+					
+					
+					$("#spbcity").click(function(){
+						$("input[id='inp_spbcity']").attr("value", "Санкт-Петербург г");
+						return false;	
+					});
+					
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#'+name_form+' *').attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+					
+					$('form').validate({
+						submitHandler: function() {
+							flag_valid = true;
+						}
+					});
+					
+
+					$('form').submit(function(){
+						name_form = $(this).attr('id');
+						if(flag_valid === true){
+							socket.emit('simile_save', 'customers/edit/<%= editform%>/<%= dataedit.CUSTOMER_ID %>', <%= dateopen %>);
+						}
+						return false;
+					});
+					
+					socket.on('TimeDocSimile', function (msg) {
+						if(msg === 'ok'){
+							flag_valid = false;
+							$('#pbdiv').show();
+							var array_table = $('#'+name_form).serializeArray();
+							$('#'+name_form+' *').attr("disabled", true);
+							$('#status').text('Подключение к серверу.').css('color','#333');
+							$('#progressbar').progressbar({ value: 0 });
+							buff_msg = 'update_form_save';
+							id = <%= dataedit.ID %>;
+							var buff_obj = {name:'CUSTOMER_ID', value : '<%= dataedit.CUSTOMER_ID %>'};
+							array_table[array_table.length] = buff_obj;
+							buff_arr = array_table;
+							socket.emit(buff_msg, name_form, id, array_table);
+						} else {
+							$('#pbdiv').show();
+							$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
+						}
+					});
+					
+					$('#back').click(function(){
+						location.href='/<%= user.role %>/customers/view/main/<%= dataedit.CUSTOMER_ID %>';
+					});
+					
+					//socket
+					socket.on('err_save', function (err) {
+					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+					setTimeout(function() {
+							$('#'+name_form+' *').attr("disabled", false);
+							$('#pbdiv').hide();
+						}, 6000);
+					});
+					
+					socket.on('end_save', function () {
+						$('#status').text('Данные на сервере сохраненны.');
+						$('#progressbar').progressbar({ value: 70 });
+						setTimeout(function() {
+							$('#status').text('Переход на страницу данных контр агента.');
+							$('#progressbar').progressbar({ value: 100 });
+							location.href='/<%= user.role %>/customers/view/main/<%= dataedit.CUSTOMER_ID %>';
+						}, 100);
+					});
+					
+					
+					socket.on('start_save', function () {
+						buff_msg = 'not';
+						$('#status').text('Обработка данных на сервере.');
+						$('#progressbar').progressbar({ value: 35 });
+					});
+					
+						
+			});
+	</script>
+	<%- partial('status') %>
+	<%- partial('editstatus') %>
+	<h1>Редактирование <% if(editform === "uaddress") { %> юридического <%} else {%> фактического <%} %>адреса</h1>
+	<form method="post" id=<% if(editform === "uaddress") { %>"save_u_address_form" <%} else {%> "save_f_address_form" <%} %> action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	  <tr>
+		<td align="right">Индекс:*</td>
+		<td><input name="INDEX_P" type="text" size="25" value="<%= dataedit.INDEX_P %>" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Город:*</td>
+		<td><input name="CITY" id="inp_spbcity" type="text" size="25" value="<%= dataedit.CITY %>"class="required"><br><a id="spbcity" href="/">Санкт-Петербург г<a/></td>
+	  </tr>
+	  <tr>
+		<td width="20%" align="right">Улица:*</td>
+		<td width="80%"><input name="STREET" type="text" size="25" value="<%= dataedit.STREET %>"class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Дом:*</td>
+		<td><input name="NUMBER_HOUSE" type="text" size="25" value="<%= dataedit.NUMBER_HOUSE %>"class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Офиса*:</td>
+		<td><input name="NUMBER_OFFICE" type="text" size="25" value="<%= dataedit.NUMBER_OFFICE %>" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="button" id="back">&nbsp;&nbsp;Назад&nbsp;&nbsp;</button><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>
+	</div>

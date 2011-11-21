@@ -1,0 +1,131 @@
+	<script type="text/javascript">
+	$(document).ready(function() {	
+					
+					$("input[name='DATE']").mask("99.99.9999");
+					
+					
+					$('form').validate({
+					   submitHandler: function() {
+						flag_valid = true;
+					   }
+					});
+					
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#save *').attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+					
+					$('form').submit(function(){
+							name_form = $(this).attr('id');
+							if(flag_valid === true){
+								flag_valid = false;
+								socket.emit('simile_save', 'orders/edit/main/<%= dataedit.ID %>', <%= dateopen %>);
+							}
+							return false;
+					});
+					
+					socket.on('TimeDocSimile', function (msg) {
+						if(msg === 'ok'){
+							flag_valid = false;
+							flag_valid = false;
+							$('#pbdiv').show();
+							var array_table = $('#'+name_form).serializeArray();
+							$('#'+name_form+" *").attr("disabled", true);
+							$('#status').text('Подключение к серверу.').css('color','#333');
+							$('#progressbar').progressbar({ value: 0 });
+							buff_msg = 'update_form_save';
+							buff_arr = array_table;
+							id = <%= dataedit.ID %>;
+							socket.emit(buff_msg, name_form, <%= dataedit.ID %>, array_table);
+						} else {
+							$('#pbdiv').show();
+							$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
+						}
+					});
+					
+					$('#back').click(function(){
+						location.href='/<%= user.role %>/orders/view/main/<%= dataedit.ID %>';
+					});
+					
+					
+					//socket
+					socket.on('start_save', function () {
+						buff_msg = 'not';
+						$('#status').text('Обработка данных на сервере.');
+						$('#progressbar').progressbar({ value: 35 });
+					});
+					
+					socket.on('end_save', function () {
+						$('#status').text('Данные на сервере сохраненны.');
+						$('#progressbar').progressbar({ value: 70 });
+						setTimeout(function() {
+							$('#status').text('Переход на страницу данных о заказе.');
+							$('#progressbar').progressbar({ value: 100 });
+							location.href='/<%= user.role %>/orders/view/main/<%= dataedit.ID %>';
+						}, 100);
+					});
+				
+					socket.on('err_save', function (err) {
+					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+					setTimeout(function() {
+							$('#'+name_form+" *").attr("disabled", false);
+							$('#pbdiv').hide();
+						}, 6000);
+					});
+					
+					$('#datepicker').datepicker();					
+			});
+	</script>
+	<%- partial('status') %>
+	<%- partial('editstatus') %>
+	<h1>Редактирование договора</h1>
+	<form method="post" id="order_main" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+		<td align="right">Заказчик*:</td>
+		<td><select name="CUSTOMER_ID">
+		<% customers.forEach (function(customer){ %>
+			<option value="<%= customer.ID %>"  <% if(dataedit.CUSTOMER_ID == customer.ID) { %> selected<%}%>><%= customer.NAME %>&nbsp;&nbsp;<%= customer.NAME_SOB %></option>
+			<% }) %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td width="20%" align="right">Название:*</td>
+		<td width="80%"><input name="NAMEORDERS" type="text" size="20" class="required" value="<%= dataedit.NAMEORDERS%>"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Тип договора:</td>
+		<td><select name="TYPE">
+			<option value="0" <% if(dataedit.TYPE === 0) { %> selected<%}%>>Поставка товара</option>
+			<option value="1" <% if(dataedit.TYPE === 1) { %> selected<%}%>>Оказание услуг</option>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right">Дата заключения:</td>
+		<td><input name="DATE" id="datepicker" type="text" size="20" value="<%= dataedit.DATE%>"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Статус договора:</td>
+		<td><select name="STATUS">
+			<option value="0" <% if(dataedit.STATUS === 0) { %> selected<%}%>>Согласование</option>
+			<option value="1" <% if(dataedit.STATUS === 1) { %> selected<%}%>>На подписании</option>
+			<option value="2" <% if(dataedit.STATUS === 2) { %> selected<%}%>>Подписан</option>
+			<option value="3" <% if(dataedit.STATUS === 3) { %> selected<%}%>>Приостановлен</option>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right">Примечание:</td>
+		<td><textarea name="note" cols="60" rows="5"><%= dataedit.NOTE%></textarea>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="button" id="back">&nbsp;&nbsp;Назад&nbsp;&nbsp;</button><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>

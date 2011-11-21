@@ -1,0 +1,121 @@
+	<script type="text/javascript">
+	$(document).ready(function() {	
+					
+					$("input[name='PHONES']").mask("(999) 999-9999? доб.9999");
+					
+					
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#'+name_form+' *').attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+					
+					
+					$('form').validate({
+						submitHandler: function() {
+							flag_valid = true;
+						}
+					});
+					
+					
+					$('form').submit(function(){
+						name_form = $(this).attr('id');
+						if(flag_valid === true){
+						socket.emit('simile_save', 'customers/edit/contact/<%= dataedit.ID %>', <%= dateopen %>);
+						}
+						return false;
+					});
+					
+					socket.on('TimeDocSimile', function (msg) {
+						if(msg === 'ok'){
+							flag_valid = false;
+							$('#pbdiv').show();
+							var array_table = $('#'+name_form).serializeArray();
+							$('#'+name_form+' *').attr("disabled", true);
+							$('#status').text('Подключение к серверу.').css('color','#333');
+							$('#progressbar').progressbar({ value: 0 });
+							buff_msg = 'update_form_save';
+							id = <%= dataedit.ID %>;
+							var buff_obj = {name:'CUSTOMER_ID', value : '<%= dataedit.CUSTOMER_ID %>'};
+							array_table[array_table.length] = buff_obj;
+							buff_arr = array_table;
+							socket.emit(buff_msg, name_form, id, array_table);
+						} else {
+							$('#pbdiv').show();
+							$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
+						}
+					});
+					
+					$('#back').click(function(){
+						location.href='/<%= user.role %>/customers/view/main/<%= dataedit.CUSTOMER_ID %>';
+					});
+					
+					//socket
+					socket.on('err_save', function (err) {
+					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+					setTimeout(function() {
+							$('#'+name_form+' *').attr("disabled", false);
+							$('#pbdiv').hide();
+						}, 6000);
+					});
+					
+					socket.on('end_save', function () {
+						$('#status').text('Данные на сервере сохраненны.');
+						$('#progressbar').progressbar({ value: 70 });
+						setTimeout(function() {
+							$('#status').text('Переход на страницу данных контр агента.');
+							$('#progressbar').progressbar({ value: 100 });
+							location.href='/<%= user.role %>/customers/view/main/<%= dataedit.CUSTOMER_ID %>';
+						}, 100);
+					});
+					
+					
+					socket.on('start_save', function () {
+						buff_msg = 'not';
+						$('#status').text('Обработка данных на сервере.');
+						$('#progressbar').progressbar({ value: 35 });
+					});
+					
+						
+			});
+	</script>
+	<%- partial('status') %>
+	<%- partial('editstatus') %>
+	<h1>Редактирование контактного лица:</h1>
+	<div id="customers_contact_div">
+	<form method="post" id="customers_contact_form" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	  <tr>
+		<td align="right">Фамилия Имя Отчество:*</td>
+		<td><input name="FIO " type="text" size="30" value="<%= dataedit.FIO %>" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Должность:</td>
+		<td><input name="POSITION" type="text" size="30" value="<%= dataedit.POSITION %>"></td>
+	  </tr>
+	  <tr>
+		<td width="20%" align="right">Телефон:</td>
+		<td width="80%"><input name="PHONES" type="text" size="30" value="<%= dataedit.PHONES %>"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Электронная почта:</td>
+		<td><input name="EMAIL" type="text" size="30" value="<%= dataedit.EMAIL %>" class="email"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Примечание:</td>
+		<td><textarea name="NOTE" cols="60" rows="5" ><%= dataedit.NOTE %></textarea></td>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="button" id="back">&nbsp;&nbsp;Назад&nbsp;&nbsp;</button><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>
+	</div>
