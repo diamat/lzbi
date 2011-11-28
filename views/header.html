@@ -1,0 +1,14 @@
+
+			<div class="full_width big">
+				<%=user.lastname%> <%=user.name%> - <%= user.position%> <%= user.companyname%>
+			</div>
+				<h1>
+				<% main_menu.forEach (function(mmenu){ %>
+				<% if(mmenu.id === action){%> 
+				<%-mmenu.name%> | 
+				<%} else {%>
+				<a href="<%-mmenu.url%>"><%-mmenu.name%></a> |
+				<% }}) %>
+				<a href="/login/logout">Выход</a> 
+				</h1>
+				<%- partial('err-disconnect') %>

@@ -1,0 +1,94 @@
+<!DOCTYPE HTML>
+<html lang="ru">
+  <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Ленинградский завод бетонных изделий</title>
+	<link rel="icon" type="image/png" href="/images/favico.gif" />
+    <link type="text/css" href="/stylesheets/main_page.css" rel="stylesheet" />
+	<link type="text/css" href="/stylesheets/table.css" rel="stylesheet" />
+	<link type="text/css" href="/stylesheets/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
+	<script type="text/javascript" src="/javascripts/socket.io.js"></script>
+	<script type="text/javascript" src="/javascripts/jquery.js"></script>
+	<script type="text/javascript" src="/javascripts/jquery.datatables.js"></script>
+	<script type="text/javascript" src="/javascripts/jquery-ui.js"></script>
+	<script type="text/javascript" src="/javascripts/jquery.validate.js"></script>
+	<script type="text/javascript" src="/javascripts/charcount.js"></script>
+	<script type="text/javascript" src="/javascripts/jquery.maskedinput.js"></script>
+	<script type="text/javascript" src="/javascripts/ui.datepicker-ru.js"></script>
+	<script>
+	var socket = io.connect('http://192.168.1.3:3000');
+	var buff_msg = 'not';
+	var buff_arr;
+	var flag_valid = false;
+	var name_form = 'not';
+	var id = 'not';
+	socket.on('connect', function () {
+		socket.emit('set session hash', {username: '<%= user.username %>', hash:'<%= user.hash%>', lastaccess:'<%= user.lastaccess%>'});
+		$('#err-disconnect').hide();
+	});
+	
+	socket.on('<%= user.lastaccess%>', function () {
+				socket.emit('msg');
+		});
+	
+	socket.on('connect_ok', function () {	
+		<% if(edit != "нет") {%>socket.emit('editdoc', '<%= edit.field %>', '<%= edit.value %>');<%}%>
+		if (buff_msg != 'not') socket.emit(buff_msg, name_form , id,  buff_arr);
+		$('#err-disconnect').hide();
+	});
+		
+	socket.on('offline', function () {
+		setTimeout(function() {
+		$('#err-disconnect').show();
+		 }, 1000);
+    });
+	
+    socket.on('disconnect', function () {
+		setTimeout(function() {
+		$('#err-disconnect').show();
+		 }, 1000);
+    });
+	</script>
+
+	
+		<script type="text/javascript">
+			$(function(){
+			
+				$('#pbdiv').hide();
+				$('#err-disconnect').hide();
+							
+				$('img.openclose').mouseover(function(){ $(this).css('cursor', 'pointer')});
+				
+				$('img.openclose').click(function(){
+						var name = $(this).attr('id');
+						var isVisible = $('#'+name+'_div').is(':visible');
+						if(isVisible === false) {$('#'+name+'_div').show(); $('#'+name).attr("src", "/images/sort_asc.png");}
+						else {$('#'+name+'_div').hide(); $('#'+name).attr("src", "/images/sort_desc.png");}
+					});
+				
+				$( "#progressbar" ).progressbar({
+						value: 0,
+						disabled: true
+					}).width(250).height(12);
+				
+				if(screen.width < 1024) {
+					$('#container').css('width', '760px');
+					};
+				
+				if(screen.width >= 1024 && screen.width < 1280) {
+					$('#container').css('width', '980px');
+					};
+				
+				if(screen.width >= 1280) {
+					$('#container').css('width', '1240px');
+					};
+			});
+		</script>
+ </head>
+	<body id="main_style">
+		<div id="container">
+		<%- partial('header') %>
+		<%- body %>
+	<div>
+  </body>
+</html>

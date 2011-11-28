@@ -1,0 +1,40 @@
+	<div class="full_width big">
+		Авторизация пользователя в корпоративной системе "Ленинградского завода бетонных изделий".
+	</div>
+		
+	<%	if(message_login_param === "error"){ if(message_login){%>
+		<h3>Ошибка:</h3> <%- message_login %> 
+		<%} %>
+	
+	<h1>Примечание:</h1> Если вы осуществляете авторизацию с чужого компьютера, не забывайте в целях безопасности выставлять галочку «вход с чужого компьютера».
+
+
+	<div id="asd" align="center">
+	<form method="post" id="enter" action="/login">
+		<p>
+		<strong>Логин:</strong>
+		<br>
+		<input type="text" name="username" SIZE=20  />
+		</p>
+		<p>
+		<strong>Пароль:</strong>
+		<br>
+		<input type="password" name="password" SIZE=20  />
+		</p>
+		<input type="checkbox" name="checksession" value="check" /> <span id="chek_text">вход с чужого компьютера</span>
+		<p>
+		<button type="subbutton">Вход в систему</button>
+		</p>		
+	</form>
+	<%} else {%>
+
+	<h1>Сообщение системы:</h1> Вы уже являетесь авторизованным пользователем системы. Для выхода из системы нажмите кнопку «Выход из системы».
+	
+	<div id="asd" align="center">
+	<form method="get" id="logout" action="/login/logout">
+		<br>
+		<button type="subbutton">Выход из системы</button>
+	</form>
+
+	<%}%>
+</div>

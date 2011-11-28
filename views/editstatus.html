@@ -1,0 +1,36 @@
+	<script type="text/javascript">
+	$(function(){
+		
+		$("input[name='go_time']").click(function(){
+				socket.emit('go_time_edit', '<%= edit.field %>', '<%= edit.value %>');
+		});
+		
+		socket.on ('error_go_time_edit', function(nameuser){
+			$('#editstatus').html('Этот документ уже редактирует: '+nameuser);
+			$('#sub').attr("disabled", true);
+		});
+		
+		socket.on ('go_time_edit_Ok', function(){
+			$('#sub').attr("disabled", false);
+			$('#editstatusdiv').hide(); 
+			setTimeout(function() {
+			$('#editstatusdiv').show();
+			$('#sub').attr("disabled", true);			
+		}, 30000);
+		});
+		
+		setTimeout(function() {
+			$('#editstatusdiv').show();
+			$('#sub').attr("disabled", true);			
+		}, 30000);
+		
+		$('#editstatusdiv').hide(); 
+	});
+	</script>
+	<div id="editstatusdiv">
+	<h3>Истекло время предназначенное для редактирования документа</h3>
+	<div align="center">
+	<br>
+	<p id="editstatus">  </p>
+	<p><input type="button" name="go_time" value="Продлить время"></p>
+	</div></div>

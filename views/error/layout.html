@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html lang="ru">
+  <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Ленинградский завод бетонных изделий</title>
+	<link rel="icon" type="image/png" href="/images/favico.gif" />
+    <link type="text/css" href="/stylesheets/main_page.css" rel="stylesheet" />
+	<script type="text/javascript" src="/javascripts/jquery.js"></script>
+		<script type="text/javascript">
+			$(function(){
+			
+				if(screen.width < 1024) {
+					$('#container').css('width', '760px');
+					};
+				
+				if(screen.width >= 1024 && screen.width < 1280) {
+					$('#container').css('width', '980px');
+					};
+				
+				if(screen.width >= 1280) {
+					$('#container').css('width', '1240px');
+					};
+			});
+		</script>
+ </head>
+	<body id="main_style">
+		<div id="container">
+		<%- body %>
+	<div>
+  </body>
+</html>
