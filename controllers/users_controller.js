@@ -5,7 +5,6 @@ var client = redis.createClient();
 var UserModel = require('../models/user');
 var sessionsave = require('../lib/sessionsave');
 var CustomerSQL = require('../models/customers_main');
-var role = 'admin';
 var erraccess = 'error/err-access.html';
 
 exports.controllerRouting = function controllerRouting (action, req, res, role, main_menu){
