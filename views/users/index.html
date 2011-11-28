@@ -4,7 +4,7 @@
 					"sPaginationType": "full_numbers",
 					 "aaData": [	
 								<% table.forEach (function(users){ %>
-								["<%= users.lastname %> <%= users.name %>","<a href='/<%= user.role %>/users/<%= users.username %>'><%= users.username %></a>","<%= users.role %>","<%= users.position %>","<%= users.company %>"],
+								["<%= users.lastname %> <%= users.name %>","<a href='/<%= user.role %>/users/edit/user/<%= users.username %>'><%= users.username %></a>","<%= users.role %>","<%= users.position %>","<%= users.company %>"],
 								<% }) %>
 								],
 					"aoColumns": [
@@ -73,7 +73,7 @@
 							var array_table = $('#save').serializeArray();
 							$('#list_user').dataTable().fnAddData( [
 							array_table[0].value+" "+array_table[1].value,
-							"<a href='/<%= user.role %>/users/"+array_table[5].value+"'>"+array_table[5].value+"</a>",
+							"<a href='/<%= user.role %>/users/edit/user/"+array_table[5].value+"'>"+array_table[5].value+"</a>",
 							array_table[4].value,
 							array_table[2].value,
 							array_table[3].value
@@ -141,7 +141,7 @@
 	  </tr>
 	</table>
 	</form>
-	<h1>Список пользователей:</h1>
+	<h1>Список пользователей</h1>
 	<div id="demo">
 	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_user"></table>
 
