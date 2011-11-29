@@ -1,5 +1,6 @@
 //admin.js
 var UsersController = require('./users_controller');
+var RDataController = require('./rdata_controller');
 var role = 'admin';
 var erraccess = 'error/err-access.html';
 var errselect = 'error/err-select.html';
@@ -40,7 +41,7 @@ module.exports = {
 		UsersController.controllerRouting('main', req, res, role, main_menu);
 	} 
 	else if(req.params.menu === 'rdata'){
-		UsersController.controllerRouting('rdata', req, res, role, main_menu);
+		RDataController.controllerRouting('main', req, res, role, main_menu);
 	} else res.render(errselect);
   },
   
@@ -48,6 +49,9 @@ module.exports = {
 	if(req.session.user.role != role) res.render(erraccess);
 	else if(req.params.menu === 'users' && req.params.form === 'user'){
 		UsersController.controllerRouting('edit', req, res, role, main_menu);
+	} 
+	else if(req.params.menu === 'rdata' && req.params.form === 'prod'){
+		RDataController.controllerRouting('edit', req, res, role, main_menu);
 	} else res.render(errselect);		
   },
   

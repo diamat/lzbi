@@ -1,6 +1,5 @@
 var my_sys = require('../lib/my_sys');
 var redis = require('redis');
-var client = redis.createClient();
 var UserModel = require('../models/user');
 
 exports.SocketAction = function (socket, client) {

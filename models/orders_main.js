@@ -1,4 +1,4 @@
-//customers-main.js
+//orders-main.js
 
 var my_sys = require('../lib/my_sys');
 var process = require('events');
@@ -10,7 +10,7 @@ var bank = require('./bankbik');
 
 
 /**
- * общая таблица - с запросами к таблицам customers;
+ * общая таблица - с запросами к таблицам orders;
  *
  */
  
