@@ -1,6 +1,7 @@
 //admin.js
 var UsersController = require('./users_controller');
 var RDataController = require('./rdata_controller');
+var SysController = require('./sys_controller');
 var role = 'admin';
 var erraccess = 'error/err-access.html';
 var errselect = 'error/err-select.html';
@@ -11,7 +12,7 @@ var main_menu = [
 	{id:'2', name: 'Сообщения', url:'/'},
 	{id:'users', name: 'Пользователи', url:  '/'+role+'/users'},
 	{id:'rdata', name: 'Справ. данные', url:  '/'+role+'/rdata'},
-	{id:'menu', name: 'Система', url:  '/'+role+'/menu'}
+	{id:'sys', name: 'Система', url:  '/'+role+'/sys'}
 	];
 
 module.exports = {
@@ -42,7 +43,11 @@ module.exports = {
 	} 
 	else if(req.params.menu === 'rdata'){
 		RDataController.controllerRouting('main', req, res, role, main_menu);
-	} else res.render(errselect);
+	} 
+	else if(req.params.menu === 'sys'){
+		SysController.controllerRouting('main', req, res, role, main_menu);
+	}
+	else res.render(errselect);
   },
   
   edit: function(req, res){
