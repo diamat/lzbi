@@ -15,7 +15,7 @@ RDataSQL.prototype.SelectMain = function (nametable) {
 	var uSQL = new universal_sql (my_sys.client_mysql());
 	var self = this;
 	
-	uSQL.SQL("SELECT *, DATE_FORMAT("+nametable+".UPDATE_DATE,'%d.%m.%Y %T') UPDATE_DATE FROM "+nametable, 'list_main'); 
+	uSQL.SQL("SELECT *, DATE_FORMAT("+nametable+".UPDATE_DATE,'%d.%m.%Y %T') UPDATE_DATE FROM "+nametable, nametable); 
 
 	uSQL.on('result_sql', function(name, result){
 		self.emit('finished', result);

@@ -5,18 +5,22 @@ exports.RoleAccess = function RoleAccess (role, action, menu, uid, cid) {
 			switch(action){
 				case 'id': {
 					if(role === 'manager' && uid == cid) return 1;
+					else return 0;
 				}
 				case 'edit':{
 					if(role === 'manager' && uid == cid) return 1;
+					else return 0;
 				}
 			}
 		case 'orders': 
 			switch(action){
 				case 'id': {
 					if(role === 'manager' && uid == cid) return 1;
+					if(role === 'manager' && uid != cid) return 2;
 				}
 				case 'edit':{
 					if(role === 'manager' && uid == cid) return 1;
+					else return 1;
 				}
 			}
 	}

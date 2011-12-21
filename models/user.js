@@ -85,33 +85,6 @@ UserModel.prototype.exportmodel = function (username, name, lastname, salt, pass
     return expmodel;
 };
 
-// Сохранение имя пользователя и ID в MySQL
-UserModel.prototype.insertMySQL = function (id, name) {
-	var uSQL = new universal_sql (my_sys.client_mysql());
-	var self = this;
-	uSQL.SQL("INSERT INTO users (ID, NAME) VALUES (\'"+id+"\', \'"+name+"\')", 'insertMySQL');
-    uSQL.on('result_sql', function(){
-		self.emit('save_ok');
-	});	
-	
-	uSQL.on('error', function(error){
-		self.emit('error', error);
-	});	
-};
-
-UserModel.prototype.updateMySQL = function (id, name) {
-	var uSQL = new universal_sql (my_sys.client_mysql());
-	var self = this;
-	uSQL.SQL("UPDATE users SET NAME = \'"+name+"\' WHERE ID = "+id, 'updateMySQL');
-    uSQL.on('result_sql', function(){
-		self.emit('save_ok');
-	});	
-	
-	uSQL.on('error', function(error){
-		self.emit('error', error);
-	});
-    
-};
 
 // Возвращает имя поля для username
 UserModel.prototype.kUserName = function (username) {
@@ -253,7 +226,7 @@ UserModel.prototype.findByUserID = function (id, callback) {
 	this.client.hexists(this.pUserName(id), this.kName(), function (err, res) {
 		if(err || res === 0) {
 				if(callback)callback.call(dublethis, 'Такой пользователь не существует.', null, dublethis);
-				else dublethis.emit('error', 'Такой пользователь не существует.');
+				else dublethis.emit('error', 'Такой пользователь не существует.', id);
 			}
 		else{
 			// Конструрируем запрос

@@ -73,7 +73,7 @@
 			function update() {
 				socket.emit('sys_data');
         
-				setTimeout(update, 100);
+				setTimeout(update, 1000);
 			}
 			
 			socket.on('sys_start', function () {

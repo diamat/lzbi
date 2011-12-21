@@ -1,4 +1,5 @@
 var OrderSQL = require('../models/orders_main');
+var RData = require('../models/rdata');
 var sessionsave = require('../lib/sessionsave');
 var erraccess = 'error/err-access.html';
 var errtype = 'error/err-type.html';
@@ -42,11 +43,25 @@ switch(action){
 				var DateArray = new OrderSQL();
 				var cftlag = 1;
 				var nameview;
-				if(req.params.form === 'main' ){cftlag = 2; nameview = 'order'; DateArray.SelectListSubOrder(req.params.id); DateArray.SelectOrder(req.params.id);}
-				if(req.params.form === 'suborder') {nameview = 'suborder'; DateArray.SelectSubOrder(req.params.id); }					
+				if(req.params.form === 'main' ){
+					cftlag = 2; nameview = 'order'; 
+					DateArray.SelectListSubOrder(req.params.id); 
+					DateArray.SelectOrder(req.params.id);
+					}
+				if(req.params.form === 'suborder') {
+					cftlag = 4;
+					nameview = 'suborder'; 
+					DateArray.FindSuborders(req.params.id, 'finished')
+					DateArray.SelectSubOrder(req.params.id);
+					DateArray.Select('products');
+					DateArray.SelectListSubOrderProd(req.params.id);
+					}					
 				var flag = 0;
 				var order;
 				var list_suborder;
+				var products;
+				var pr_redis;
+				var list_suborders_prod = [];
 				
 				DateArray.on('noresult', function(){
 					res.render (errselect);
@@ -57,31 +72,44 @@ switch(action){
 					flag++
 					if(name_select === 'SelectOrder' || name_select === 'SelectSubOrder') order = result; 
 					if(name_select === 'SelectListSubOrder') list_suborder = result; 
+					if(name_select === 'products') products = result; 
+					if(name_select === 'FindSuborders') pr_redis = result; 
+					if(name_select === 'SelectListSubOrderProd') list_suborders_prod = result; 
 					
 						if(flag == cftlag){
 							var user = req.session.user;
 							user.lastaccess = req.session.lastAccess;
-							var newsocketio = new sessionsave();
-							newsocketio.SocketnameSave(req.params.menu+'-socket.js', user.lastaccess);	
 							
 							var access = roleaccess.RoleAccess (role, action, req.params.menu, user.id, order.UID);
 							
-							order.NOTE = order.NOTE.replace(/\r\n|\r|\n/g,"<br />");
+							if(access == 1 || access == 0){
+								var newsocketio = new sessionsave();
+								newsocketio.SocketnameSave(req.params.menu+'-socket.js', user.lastaccess);	
 								
-							newsocketio.on('SocketnameSave_Ok', function(){
-								res.render(req.params.menu+'/'+nameview, {
-										locals: {
-											user: user, 
-											main_menu: main_menu,
-											action: 'нет',
-											edit: 'нет',
-											action2: req.params.menu,
-											access: access,
-											order: order,
-											listsuborders: list_suborder
-											}
+								var access = roleaccess.RoleAccess (role, action, req.params.menu, user.id, order.UID);
+								
+								order.NOTE = order.NOTE.replace(/\r\n|\r|\n/g,"<br />");
+								
+								console.log(pr_redis);
+								
+								newsocketio.on('SocketnameSave_Ok', function(){
+									res.render(req.params.menu+'/'+nameview, {
+											locals: {
+												user: user, 
+												main_menu: main_menu,
+												action: 'нет',
+												edit: 'нет',
+												action2: req.params.menu,
+												access: access,
+												order: order,
+												products: products,
+												pr_redis: pr_redis,
+												list_suborders_prod: list_suborders_prod,
+												listsuborders: list_suborder
+												}
+									});
 								});
-							});
+							} else res.render (erraccess);
 						} 
 				});
 			} else res.render (errselect);
@@ -89,7 +117,7 @@ switch(action){
 		break;
 		
 	case 'edit': {
-			if(req.params.form === 'main' || req.params.form === 'suborder'){
+			if(req.params.form === 'main' || req.params.form === 'suborder' || req.params.form === 'suborderprod'){
 				var newsocketio = new sessionsave();
 				var edit = {field: req.params.menu+'/edit/'+req.params.form+'/'+req.params.id, value: req.session.user.lastname+' '+req.session.user.name+' - '+req.session.user.position+' '+req.session.user.companyname}
 				newsocketio.SocketEditFind (edit.field);
@@ -102,6 +130,7 @@ switch(action){
 						
 						if(req.params.form === 'main') {name_view = 'edit_main'; DateArray.SelectMain(req.session.user.id, 1, req.params.id);}
 						if(req.params.form === 'suborder')  {name_view = 'edit_suborder'; DateArray.SelectSubOrder(req.params.id, 'edit');}
+						if(req.params.form === 'suborderprod')  { name_view = 'edit_suborderprod'; DateArray.SelectSubOrderProd(req.params.id);}
 						
 						
 						DateArray.on('noresult', function(){

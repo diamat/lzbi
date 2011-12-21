@@ -24,12 +24,17 @@ module.exports = {
             if (user) {
 				 req.session.regenerate(function(){
 				 req.session.user = user;
+				 //var hour = 3600000;
+				 //console.log('req.session.cookie.expires '+new Date(Date.now()));
+				// console.log('req.session.cookie.expires '+new Date(Date.now() + hour));
+				 //req.session.cookie.expires = new Date(Date.now() + hour);*/
+				 //req.session.cookie.originalMaxAge = hour;
 				 if(check == '1') req.session.cookie.expires = false;
                  res.redirect('/');
 				});
 			} else {
 			     req.session.error = 'Ошибка авторизации, неверный логин или пароль.';
-			     res.redirect('login');
+			     res.redirect('/login');
 				}
 		});
 	},
@@ -51,7 +56,7 @@ function authenticate(name, pass, check_par, callback) {
 	if(name&&pass) {
 		users.findByUserName(name, function (err, res, fn) {
 		 if (err) {
-			 console.log('' + err);
+			 console.log('!' + err);
 			 callback.call(this, null, null, null);
 		 } else if (res) {
 			 var user = new Object;

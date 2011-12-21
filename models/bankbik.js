@@ -103,7 +103,7 @@ BankBikModel.prototype.findByBankBik = function (bik, callback) {
 // BankBikModel.remove
 BankBikModel.prototype.remove = function (callback) {
 	this.client.multi([
-	['del', 'bank:bik'],
+	['del', 'bank:bik']
 	]).exec(function (err, repl) {
 	if (err) {
 			if (callback) callback.call(this, err, null, this);

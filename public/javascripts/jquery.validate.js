@@ -242,7 +242,7 @@ $.extend($.validator, {
 		date: "Please enter a valid date.",
 		dateISO: "Please enter a valid date (ISO).",
 		dateDE: "Bitte geben Sie ein gГјltiges Datum ein.",
-		number: "Please enter a valid number.",
+		number: " В этом поле должно быть число.",
 		numberDE: "Bitte geben Sie eine Nummer ein.",
 		digits: "Please enter only digits",
 		creditcard: "Please enter a valid credit card number.",

@@ -4,6 +4,7 @@ var my_sys = require('../lib/my_sys');
 var process = require('events');
 var sys = require('util');
 var universal_sql = require('../models/universal_sql');
+var usersmodel = require('../models/user');
 var	redis = require('redis');
 var client = redis.createClient();
 var bank = require('./bankbik');
@@ -27,16 +28,47 @@ CustomerSQL.prototype.SelectMain = function () {
 	var list_customers = [];
 	var countSQL = 0;
 	var self = this;
+	var users = new usersmodel(client);
+	var count_customers;
 	
 	uSQL.SQL("SELECT * FROM forma_sob", 'forma_sob'); 
 	
-	uSQL.SQL("SELECT customers_u.ID, customers_u.NAME, customers_u.INN, customers_u.PHONES, customers_u.FORMA_SOB, customers_u.FAX, customers_u.WWW, customers_u.EMAIL, users.NAME UNAME, customers_u.TYPE, forma_sob.NAME NAME_SOB, DATE_FORMAT(customers_u.UPDATE_DATE,'%d.%m.%Y %T') UPDATE_DATE FROM customers_u, forma_sob, users WHERE customers_u.FORMA_SOB = forma_sob.ID AND customers_u.MANAGER = users.ID", 'list_customers');
+	uSQL.SQL("SELECT customers_u.ID, customers_u.NAME, customers_u.INN, customers_u.PHONES, customers_u.FORMA_SOB, customers_u.FAX, customers_u.WWW, customers_u.EMAIL, customers_u.MANAGER, customers_u.TYPE, forma_sob.NAME NAME_SOB, DATE_FORMAT(customers_u.UPDATE_DATE,'%d.%m.%Y %T') UPDATE_DATE FROM customers_u, forma_sob WHERE customers_u.FORMA_SOB = forma_sob.ID", 'list_customers');
 	
 	uSQL.on('result_sql', function(name, result){
-		if(name === 'forma_sob') {forma_sob = result; countSQL++;}
-		if(name === 'list_customers') {list_customers = result; countSQL++;}
-		if(countSQL === 2) self.emit('finished', forma_sob, list_customers); 
+		if(name === 'forma_sob') {
+			forma_sob = result; countSQL++;
+			if(countSQL === 2 && count_customers == 0) self.emit('finished', forma_sob, list_customers); 
+		}
+		if(name === 'list_customers') {
+			list_customers = result; 
+			count_customers = result.length;
+			countSQL++;
+			var buff_id =[];
+			buff_id[0] = result[0].MANAGER;
+			users.findByUserID(result[0].MANAGER);
+			for (var i=1;i<result.length;i++) {
+				var mass = buff_id.indexOf(result[i].MANAGER);
+				if(mass === -1) {
+					buff_id.push(result[i].MANAGER); 
+					users.findByUserID(result[i].MANAGER);
+				}
+			}
+		}
 	});	
+	
+	users.on('result_findByUserID', function(result){
+		for (var i=0;i<list_customers.length;i++) {
+				if(list_customers[i].MANAGER === result.id) {list_customers[i].UNAME = result.lastname+' '+result.name; count_customers--;}
+			}
+		if(countSQL === 2 && count_customers == 0) self.emit('finished', forma_sob, list_customers); 
+	});
+	
+	users.on('error', function(msg, id){
+		for (var i=0;i<list_customers.length;i++) {
+				if(list_customers[i].MANAGER === id) {list_customers[i].UNAME = 'нет'; count_customers--;}
+			}
+	});
 	
 	uSQL.on('error', function(error){
 		console.log(error.message);
@@ -111,13 +143,26 @@ CustomerSQL.prototype.UpdateMainCustomer = function (nametable, id, array_table)
 CustomerSQL.prototype.SelectCustomer = function (id) {
 	var uSQL = new universal_sql (my_sys.client_mysql());
 	var self = this;
+	var users = new usersmodel(client);
+	var customer;
 
-	uSQL.SQL("SELECT customers_u.*, forma_sob.NAME NAME_SOB, users.NAME UNAME, customers_u.MANAGER UID, DATE_FORMAT(customers_u.UPDATE_DATE,'%d.%m.%Y %T') UPDATE_DATE  FROM customers_u, forma_sob, users WHERE customers_u.ID = "+id+" AND customers_u.FORMA_SOB = forma_sob.ID AND customers_u.MANAGER = users.ID", 'result_customer');
+	uSQL.SQL("SELECT customers_u.*, forma_sob.NAME NAME_SOB, customers_u.MANAGER UID, DATE_FORMAT(customers_u.UPDATE_DATE,'%d.%m.%Y %T') UPDATE_DATE  FROM customers_u, forma_sob WHERE customers_u.ID = "+id+" AND customers_u.FORMA_SOB = forma_sob.ID", 'result_customer');
 	
 	uSQL.on('result_sql', function(name, result){
-		if(result.length != 0) self.emit('finished', result, 'SelectCustomer'); 
+		if(result.length != 0) {customer = result; users.findByUserID(result[0].MANAGER);}
 		else self.emit('noresult'); 
 	});	
+	
+	users.on('result_findByUserID', function(result){
+		customer[0].UNAME = result.lastname+' '+result.name;
+		self.emit('finished', customer, 'SelectCustomer');
+	});
+	
+	
+	users.on('error', function(msg, id){
+		customer[0].UNAME = 'нет';
+		self.emit('finished', customer, 'SelectCustomer');
+	});
 	
 	uSQL.on('error', function(error){
 		console.log(error.message);

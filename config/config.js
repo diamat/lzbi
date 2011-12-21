@@ -15,7 +15,6 @@ exports.boot_config =  function bootConfig(app) {
   app.use(app.router);
   app.use(express.static(path_dirname + '/public'));
 
-
   // Example 500 page
   app.use(function(err, req, res, next){
     res.render('error/500');

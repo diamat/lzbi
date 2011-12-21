@@ -1,92 +1,96 @@
 	<script type="text/javascript">
 	$(document).ready(function() {	
-					
-					$("input[name='DATE']").mask("99.99.9999");
-					
-					$("#list_suborders").dataTable({
+			
+			$("#list_suborders_prod").dataTable({
 					"sPaginationType": "full_numbers",
 					"aoColumns": [
+									{ "sType": "numeric-url", "sClass": "center"},
 									{ "sClass": "center" },
 									{ "sClass": "center" },
 									{ "sClass": "center" },
+									{ "sClass": "center" },
+									<%  if(access ==  1){%>{ "sClass": "center" },<%}%>
 									{ "sClass": "center" }
 								]
-					});
+			});
 					
-					$('form').validate({
-					   submitHandler: function() {
-						flag_valid = true;
-					   }
-					});
+		<%  if(access ==  1){%>
+			$('form').validate({
+				submitHandler: function() {
+					flag_valid = true;
+				}
+			});
 					
-					$("input:text").keydown(function (event) {
-						if (event.keyCode == 13) {
-						event.preventDefault();
-						}
-					});
+			$("input:text").keydown(function (event) {
+				if (event.keyCode == 13) {
+					event.preventDefault();
+				}
+			});
 					
-					$("input[name='no_save']").click(function(){
+			$("input[name='no_save']").click(function(){
 						buff_msg = 'not';
 						$('#'+name_form+' *').attr("disabled", false);
 						$('#pbdiv').hide();
-					});
-					
-					$('form').submit(function(){
-							if(flag_valid === true){
-								name_form = $(this).attr('id');
-								flag_valid = false;
-								$('#pbdiv').show();
-								var array_table = $('#'+name_form+'').serializeArray();
-								$('#'+name_form+' *').attr("disabled", true);
-								$('#status').text('Подключение к серверу.').css('color','#333');
-								$('#progressbar').progressbar({ value: 0 });
-								buff_msg = 'new_suborder';
-								var buff_obj = {name:'ORDER_ID', value : '<%= order.ID %>'};
-								array_table[array_table.length] = buff_obj;
-								buff_arr = array_table;
-								socket.emit(buff_msg, name_form, id, array_table);
-							}
-							return false;
-					});
-					
-					//socket
-					socket.on('start_save', function () {
-						buff_msg = 'not';
-						$('#status').text('Обработка данных на сервере.');
-						$('#progressbar').progressbar({ value: 35 });
-					});
-					
-					
-					socket.on('end_save', function (new_suborder) {
-						$('#status').text('Данные на сервере сохраненны.');
-						$('#progressbar').progressbar({ value: 70 });
-						$('#'+name_form+' *').attr("disabled", false);
-						$('#status').text('Добовление данных к таблице.');
-						$('#list_suborders').dataTable().fnAddData( [
-							'<a href="/<%= user.role %>/orders/view/suborder/'+new_suborder.ID+'">'+new_suborder.SUBNO+'</a>',
-							'<span class="warning">'+buff_arr[0].value+'</span>',
-							'<span class="warning">'+buff_arr[1].value+'</span>',
-							'<span class="warning">'+buff_arr[2].value+'</span>'
-						]);
-						$('#'+name_form)[0].reset();
-						$('#progressbar').progressbar({ value: 100 });
-						setTimeout(function() {
-							$('#pbdiv').hide();
-						}, 1000);
-					});
-				
-					socket.on('err_save', function (err) {
-					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
-					setTimeout(function() {
-							$('#'+name_form+' *').attr("disabled", false);
-							$('#pbdiv').hide();
-						}, 6000);
-					});
-			
-			$('#save_suborder_div').hide();
-			$('#datepicker').datepicker();	
-						
 			});
+					
+			$('form').submit(function(){
+				if(flag_valid === true){
+					name_form = $(this).attr('id');
+					flag_valid = false;
+					$('#pbdiv').show();
+					var array_table = $('#'+name_form+'').serializeArray();
+					$('#'+name_form+' *').attr("disabled", true);
+					$('#status').text('Подключение к серверу.').css('color','#333');
+					$('#progressbar').progressbar({ value: 0 });
+					buff_msg = 'new_suborders_prod';
+					var buff_obj = {name:'SUBORDER_ID', value : '<%= order.ID %>'};
+					array_table[array_table.length] = buff_obj;
+					buff_arr = array_table;
+					socket.emit(buff_msg, name_form, id, array_table);
+				}
+				return false;
+			});
+					
+			//socket
+			socket.on('start_save', function () {
+				buff_msg = 'not';
+				$('#status').text('Обработка данных на сервере.');
+				$('#progressbar').progressbar({ value: 35 });
+			});
+					
+					
+			socket.on('end_save', function (new_suborder) {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				$('#'+name_form+' *').attr("disabled", false);
+				$('#status').text('Добовление данных к таблице.');
+				$('#list_suborders_prod').dataTable().fnAddData( [
+					'<span class="warning"><a href="/<%= user.role %>/orders/edit/suborderprod/'+new_suborder.ID+'">'+new_suborder.SUBNO+'</a></span>',
+					'<span class="warning">'+new_suborder.NAME+' '+buff_arr[1].value+'</span>',
+					'<span class="warning">'+new_suborder.UNIT+'</span>',
+					'<span class="warning">сейчас</span>',
+					'<span class="warning">'+buff_arr[2].value+'</span>',
+					'<span class="warning">'+buff_arr[3].value+'</span>',
+					'<span class="warning">'+buff_arr[4].value+'</span>'
+				]);
+				$('#'+name_form)[0].reset();
+				$('#progressbar').progressbar({ value: 100 });
+				setTimeout(function() {
+					$('#pbdiv').hide();
+				}, 1000);
+			});
+				
+			socket.on('err_save', function (err) {
+				$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+				setTimeout(function() {
+					$('#'+name_form+' *').attr("disabled", false);
+					$('#pbdiv').hide();
+				}, 6000);
+			});
+			
+			$('#suborders_prod_div').hide();
+			<%}%>			
+	});
 	</script>
 	<%- partial('status') %>
 	<h1>Приложение №<%=order.SUBNO%></h1>
@@ -95,5 +99,85 @@
 	<strong>Название:</strong> <%= order.NAME %> <br>
 	<strong>Дата заключения:</strong> <%= order.SODATE %> <br>
 	<strong>Примечание:</strong> <%- order.NOTE %> </p>
-	<%  if(access ==  1){ %><p><a href="/<%- user.role %>/<%- action2%>/edit/suborder/<%- order.ID  %>">Редактировать</a></p><%}%>
+	<%  if(access ==  1){ %><p><a href="/<%- user.role %>/<%- action2%>/edit/suborder/<%- order.ID  %>">Редактировать</a></p>
+	<h1>Добавить пункт к приложению:<img id="suborders_prod" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="suborders_prod_div">
+	<form method="post" id="save_suborders_prod_form" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	  <tr>
+		<td width="20%" align="right" align="right">Продукция/услуги:</td>
+		<td><select name="PRODUCT_ID">
+		<% products.forEach (function(product){ %>
+			<%if(product.ARCHIVE === 0){%><option value="<%= product.ID %>"><%= product.NAME %>&nbsp;(<%= product.UNIT %>) </option><%}%>
+			<% }) %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right">Приписка к названию прод./усл.:</td>
+		<td><input name="ADDNAME" type="text" size="40"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Цена за ед.(руб.)*:</td>
+		<td><input name="PRICE" type="text" size="40" class="required number"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Кол-во*:</td>
+		<td><input name="NUMBER" type="text" size="40" class="required number"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Откат за ед. (руб.):</td>
+		<td><input name="OTKAT" type="text" size="40" class="number"></td>
+	  </tr>
+		<td align="right"></td>
+		<td><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>
+	</div>
+	<%}%>
+	<h1>Список продукции/услуг в приложение</h1>
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_suborders_prod">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Название</th>
+			<th width="30px">Ед.</th>
+			<th>Дата редактирования</th>
+			<th>Цена</th>
+			<th>Кол-во</th>
+			<%  if(access ==  1){ %>
+			<th width="">Откат</th>
+			<%}%>
+		</tr>
+	</thead>
+	<tbody >
+		<% if(list_suborders_prod){%>
+		<% list_suborders_prod.forEach (function(suborders_prod){ %>
+		<tr class="odd gradeU" >
+			<td><a href="/<%= user.role %>/orders/edit/suborderprod/<%= suborders_prod.ID %>"><%= suborders_prod.SUBNO %></a></td>
+			<td><%= suborders_prod.NAME %>&nbsp;<%= suborders_prod.ADDNAME %></td>
+			<td><%= suborders_prod.UNIT %></td>
+			<td><%= suborders_prod.UDATE %></td>
+			<td><%  if(pr_redis[suborders_prod.ID]) {%><%=pr_redis[suborders_prod.ID][0] %><% }%></td>
+			<td><%  if(pr_redis[suborders_prod.ID]) {%><%=pr_redis[suborders_prod.ID][1] %><% }%></td>
+			<%  if(access ==  1){ %>
+			<td><%  if(pr_redis[suborders_prod.ID]) {%><%=pr_redis[suborders_prod.ID][2] %><% }%></td>
+			<%}%>
+		</tr>
+		<% })}%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Название</th>
+			<th>Ед.</th>
+			<th>Дата редактирования</th>
+			<th>Цена</th>
+			<th>Кол-во</th>
+			<%  if(access ==  1){ %>
+			<th width="">Откат</th>
+			<%}%>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
 	

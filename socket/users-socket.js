@@ -18,13 +18,9 @@ exports.SocketAction = function (socket, client) {
 				else {
 						semen.findByUserName(array_table[5].value, function (err, res, callback) {
 							if(err) socket.emit('err_save', ''+err);
-							else semen.insertMySQL(res.id, res.lastname+' '+res.name);
+							else socket.emit('end_save',res);
 						});
 					}
-			});
-			
-			semen.on ('save_ok', function(){
-				socket.emit('end_save');
 			});
 			
 			semen.on ('error', function(error){
@@ -47,13 +43,9 @@ exports.SocketAction = function (socket, client) {
 				else {
 						semen.findByUserName(array_table[5].value, function (err, res, callback) {
 							if(err) socket.emit('err_save', ''+err);
-							else semen.updateMySQL(res.id, res.lastname+' '+res.name);
+							else socket.emit('end_save');
 						});
 					}
-			});
-			
-			semen.on ('save_ok', function(){
-				socket.emit('end_save');
 			});
 			
 			semen.on ('error', function(error){

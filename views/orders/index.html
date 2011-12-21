@@ -1,8 +1,9 @@
 	<script type="text/javascript">
 	$(document).ready(function() {	
-					$("input[name='DATE']").mask("99.99.9999");
+			
+			$("input[name='DATE']").mask("99.99.9999");
 					
-					$("#list_orders").dataTable({
+			$("#list_orders").dataTable({
 					"sPaginationType": "full_numbers",
 					"aoColumns": [
 									{ "sClass": "center" },
@@ -13,85 +14,85 @@
 									{ "sClass": "center"},
 									{ "sClass": "center"}
 								]
-					});
-					
-					
-					$('form').validate({
-					   submitHandler: function() {
-						 flag_valid = true;
-					   }
-					});
-					
-					$("input:text").keydown(function (event) {
-						if (event.keyCode == 13) {
-						event.preventDefault();
-						}
-					});
-					
-					$("input[name='no_save']").click(function(){
-						buff_msg = 'not';
-						$('#save *').attr("disabled", false);
-						$('#pbdiv').hide();
-					});
-					
-					
-					$('form').submit(function(){
-							if(flag_valid === true){
-								name_form = $(this).attr('id');
-								flag_valid = false;
-								$('#pbdiv').show();
-								var array_table = $('#save').serializeArray();
-								$('#'+name_form+' *').attr("disabled", true);
-								$('#status').text('Подключение к серверу.').css('color','#333');
-								$('#progressbar').progressbar({ value: 0 });
-								buff_msg = 'new_order';
-								buff_arr = array_table;
-								socket.emit(buff_msg, name_form, id, array_table);
-							}
-							return false;
-					});
-					
-					//socket
-					socket.on('start_save', function () {
-						buff_msg = 'not';
-						$('#status').text('Обработка данных на сервере.');
-						$('#progressbar').progressbar({ value: 35 });
-					});
-					
-					
-					socket.on('end_save', function (new_order) {
-						$('#status').text('Данные на сервере сохраненны.');
-						$('#progressbar').progressbar({ value: 70 });
-						$('#'+name_form+' *').attr("disabled", false);
-						$('#list_orders').dataTable().fnAddData( [
-						'<a href="/<%= user.role %>/orders/view/main/'+new_order.ID+'">'+new_order.ID+'</a>',
-						'<span class="warning">'+buff_arr[1].value+'</span>',
-						'<a href="/<%= user.role %>/customers/view/main/'+buff_arr[0].value+'">'+$('select[name="CUSTOMER_ID"] :selected').text()+'</a>',
-						'<span class="warning">'+$('select[name="TYPE"] :selected').text()+'</span>',
-						'<span class="warning">'+buff_arr[3].value+'</span>',
-						'<span class="warning">'+$('select[name="STATUS"] :selected').text()+'</span>',
-						'<span class="warning">'+buff_arr[5].value+'</span>'
-						]);
-						$('#status').text('Добовление данных к таблице.');
-						$('#'+name_form)[0].reset();
-						$('#progressbar').progressbar({ value: 100 });
-						setTimeout(function() {
-							$('#pbdiv').hide();
-						}, 1000);
-					});
-				
-					socket.on('err_save', function (err) {
-					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
-					setTimeout(function() {
-							$('#'+name_form+' *').attr("disabled", false);
-							$('#pbdiv').hide();
-						}, 6000);
-					});
-					
-					$('#new_order_div').hide();
-					$('#datepicker').datepicker();
-						
 			});
+					
+					
+			$('form').validate({
+				submitHandler: function() {
+					flag_valid = true;
+				}
+			});
+					
+			$("input:text").keydown(function (event) {
+				if (event.keyCode == 13) {
+					event.preventDefault();
+				}
+			});
+					
+			$("input[name='no_save']").click(function(){
+				buff_msg = 'not';
+				$('#save *').attr("disabled", false);
+				$('#pbdiv').hide();
+			});
+					
+					
+			$('form').submit(function(){
+				if(flag_valid === true){
+					name_form = $(this).attr('id');
+					flag_valid = false;
+					$('#pbdiv').show();
+					var array_table = $('#save').serializeArray();
+					$('#'+name_form+' *').attr("disabled", true);
+					$('#status').text('Подключение к серверу.').css('color','#333');
+					$('#progressbar').progressbar({ value: 0 });
+					buff_msg = 'new_order';
+					buff_arr = array_table;
+					socket.emit(buff_msg, name_form, id, array_table);
+				}
+				return false;
+			});
+					
+			//socket
+			socket.on('start_save', function () {
+				buff_msg = 'not';
+				$('#status').text('Обработка данных на сервере.');
+				$('#progressbar').progressbar({ value: 35 });
+			});
+					
+					
+			socket.on('end_save', function (new_order) {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				$('#'+name_form+' *').attr("disabled", false);
+				$('#list_orders').dataTable().fnAddData( [
+					'<a href="/<%= user.role %>/orders/view/main/'+new_order.ID+'">'+new_order.ID+'</a>',
+					'<span class="warning">'+buff_arr[1].value+'</span>',
+					'<a href="/<%= user.role %>/customers/view/main/'+buff_arr[0].value+'">'+$('select[name="CUSTOMER_ID"] :selected').text()+'</a>',
+					'<span class="warning">'+$('select[name="TYPE"] :selected').text()+'</span>',
+					'<span class="warning">'+buff_arr[3].value+'</span>',
+					'<span class="warning">'+$('select[name="STATUS"] :selected').text()+'</span>',
+					'<span class="warning">'+buff_arr[5].value+'</span>'
+				]);
+				$('#status').text('Добовление данных к таблице.');
+				$('#'+name_form)[0].reset();
+				$('#progressbar').progressbar({ value: 100 });
+				setTimeout(function() {
+					$('#pbdiv').hide();
+				}, 1000);
+			});
+				
+			socket.on('err_save', function (err) {
+				$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+				setTimeout(function() {
+					$('#'+name_form+' *').attr("disabled", false);
+					$('#pbdiv').hide();
+				}, 6000);
+			});
+					
+			$('#new_order_div').hide();
+			$('#datepicker').datepicker();
+						
+	});
 	</script>
 	<%- partial('status') %>
 	<h1>Новый договор<img id="new_order" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>

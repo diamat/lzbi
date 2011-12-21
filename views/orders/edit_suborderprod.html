@@ -1,8 +1,6 @@
 	<script type="text/javascript">
 	$(document).ready(function() {	
 					
-			$("input[name='DATE']").mask("99.99.9999");
-					
 			$('form').validate({
 				submitHandler: function() {
 					flag_valid = true;
@@ -25,7 +23,7 @@
 				name_form = $(this).attr('id');
 				if(flag_valid === true){
 					flag_valid = false;
-					socket.emit('simile_save', 'orders/edit/suborder/<%= dataedit.ID %>', <%= dateopen %>);
+					socket.emit('simile_save', '<%= edit.field %>', <%= dateopen %>);
 				}
 				return false;
 			});
@@ -42,7 +40,7 @@
 					buff_msg = 'update_form_save';
 					buff_arr = array_table;
 					id = <%= dataedit.ID %>;
-					socket.emit(buff_msg, name_form, <%= dataedit.ID %>, array_table);
+					socket.emit(buff_msg, name_form, <%= dataedit.ID %>, array_table, <%= dataedit.SUBORDER_ID %>);
 				} else {
 					$('#pbdiv').show();
 					$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
@@ -50,7 +48,7 @@
 			});
 					
 			$('#back').click(function(){
-				location.href='/<%= user.role %>/orders/view/suborder/<%= dataedit.ID %>';
+				location.href='/<%= user.role %>/orders/view/suborder/<%= dataedit.SUBORDER_ID %>';
 			});
 					
 					
@@ -67,7 +65,7 @@
 				setTimeout(function() {
 					$('#status').text('Переход на страницу данных о заказе.');
 					$('#progressbar').progressbar({ value: 100 });
-					location.href='/<%= user.role %>/orders/view/suborder/<%= dataedit.ID %>';
+					location.href='/<%= user.role %>/orders/view/suborder/<%= dataedit.SUBORDER_ID %>';
 				}, 100);
 			});
 				
@@ -84,20 +82,33 @@
 	</script>
 	<%- partial('status') %>
 	<%- partial('editstatus') %>
-	<h1>Редактирование приложения</h1>
-	<form method="post" id="suborder_main" action="/">
+	<h1>Редактирование позиции в приложении</h1>
+	<form method="post" id="suborderprod_main" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
-		<td width="20%" align="right">Название:*</td>
-		<td width="80%"><input name="NAME" type="text" size="20" class="required" value="<%= dataedit.NAME%>"></td>
-	  </tr>
-		<td align="right">Дата заключения:</td>
-		<td><input name="DATE" id="datepicker" type="text" size="20" value="<%= dataedit.SODATE%>"></td>
+	  <tr>
+		<td width="20%" align="right" align="right">Продукция/услуги:</td>
+		<td><select name="PRODUCT_ID">
+		<% customers.forEach (function(product){ %>
+			<%if(product.ARCHIVE === 0){%><option value="<%= product.ID %>" <% if(dataedit.PRODUCT_ID == product.ID) { %> selected<%}%>><%= product.NAME %>&nbsp;(<%= product.UNIT %>) </option><%}%>
+			<% }) %>
+		</select></td>
 	  </tr>
 	  <tr>
-		<td align="right">Примечание:</td>
-		<td><textarea name="note" cols="60" rows="5"><%= dataedit.NOTE%></textarea>
+		<td align="right">Приписка к названию прод./усл.:</td>
+		<td><input name="ADDNAME" type="text" size="40" value="<%= dataedit.ADDNAME%>"></td>
 	  </tr>
 	  <tr>
+		<td align="right">Цена за ед.(руб.)*:</td>
+		<td><input name="PRICE" type="text" size="40" class="required number" value="<%= dataedit.PRICE%>"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Кол-во*:</td>
+		<td><input name="NUMBER" type="text" size="40" class="required number" value="<%= dataedit.NUMERIC%>"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Откат за ед. (руб.):</td>
+		<td><input name="OTKAT" type="text" size="40" class="number" value="<%= dataedit.OTKAT%>"></td>
+	  </tr>
 		<td align="right"></td>
 		<td><button type="button" id="back">&nbsp;&nbsp;Назад&nbsp;&nbsp;</button><button type="subbutton" id="sub">Сохранить</button></td>
 	  </tr>

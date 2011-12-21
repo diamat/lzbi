@@ -21,6 +21,22 @@ var OrderSQL = module.exports =  function () {
 
 sys.inherits(OrderSQL, process.EventEmitter);
 
+OrderSQL.prototype.Select = function (nametable) {
+	var uSQL = new universal_sql (my_sys.client_mysql());
+	var self = this;
+	
+	uSQL.SQL("SELECT *, DATE_FORMAT("+nametable+".UPDATE_DATE,'%d.%m.%Y %T') UPDATE_DATE FROM "+nametable, nametable); 
+
+	uSQL.on('result_sql', function(name, result){
+		if(result.length != 0) self.emit('finished', result, name);
+		else self.emit('noresult'); 
+	});	
+	
+	uSQL.on('error', function(error){
+		console.log(error.message);
+	});	
+};
+
 OrderSQL.prototype.SelectMain = function (id, access, edit_id) {
 	var uSQL = new universal_sql (my_sys.client_mysql());
 	var list_customers = [];
@@ -90,6 +106,47 @@ OrderSQL.prototype.SelectSubOrder = function (id, nameselect) {
 	
 };
 
+OrderSQL.prototype.SelectSubOrderProd = function (id) {
+	var uSQL = new universal_sql (my_sys.client_mysql());
+	var self = this;
+	var i=0;
+	var list_prod = [];
+	var data_mysql = [];
+	var data_redis = [];
+	
+	uSQL.SQL("SELECT suborders_prod.*, customers_u.MANAGER UID FROM  suborders_prod, orders, suborders, customers_u WHERE suborders_prod.ID = '"+id+"' AND orders.ID = suborders.ORDER_ID AND suborders_prod.SUBORDER_ID = suborders.ID AND orders.CUSTOMER_ID = customers_u.ID", 'SelectSubOrderProd');
+	uSQL.SQL("SELECT * FROM  products", 'products');
+	self.FindSubordersProd(id);
+	
+	uSQL.on('result_sql', function(name, result){
+		if(result.length != 0) {
+			if(name === 'SelectSubOrderProd') {i++; data_mysql = result;}
+			if(name === 'products') {i++; list_prod = result;}
+			if(name === 'FindSubordersProd') {i++; data_redis = result;}
+			if(i == 3){
+				if(data_redis[0] === null ) data_redis[0] = 0;
+				if(data_redis[1] === null ) data_redis[1] = 0;
+				if(data_redis[2] === null ) data_redis[2] = 0;
+				data_mysql[0].PRICE = data_redis[0];
+				data_mysql[0].NUMERIC = data_redis[1];
+				data_mysql[0].OTKAT = data_redis[2];
+				self.emit('finished', list_prod, data_mysql); 
+			}
+		}
+		else self.emit('noresult'); 
+	});
+	
+	self.on('ok_FindSubordersProd', function(res){	
+		uSQL.emit('result_sql', 'FindSubordersProd', res);
+	});
+	
+	uSQL.on('error', function(error){
+		console.log(error.message);
+		self.emit('error', error.message);
+	});
+	
+};
+
 OrderSQL.prototype.SelectListSubOrder = function (id) {
 	var uSQL = new universal_sql (my_sys.client_mysql());
 	var self = this;
@@ -98,6 +155,21 @@ OrderSQL.prototype.SelectListSubOrder = function (id) {
 	
 	uSQL.on('result_sql', function(name, result){
 		self.emit('finished', result, 'SelectListSubOrder'); 
+	});
+	
+	uSQL.on('error', function(error){
+		self.emit('error', error.message);
+	});
+	
+};
+
+OrderSQL.prototype.SelectListSubOrderProd = function (id) {
+	var uSQL = new universal_sql (my_sys.client_mysql());
+	var self = this;
+	uSQL.SQL("SELECT products.NAME, products.UNIT, DATE_FORMAT(suborders_prod.UPDATE_DATE,'%d.%m.%Y %T') UDATE, suborders_prod.* FROM suborders_prod, products WHERE suborders_prod.SUBORDER_ID = '"+id+"' AND products.ID = suborders_prod.PRODUCT_ID", 'SelectListSubOrderProd');
+	
+	uSQL.on('result_sql', function(name, result){
+		self.emit('finished', result, 'SelectListSubOrderProd'); 
 	});
 	
 	uSQL.on('error', function(error){
@@ -138,6 +210,31 @@ OrderSQL.prototype.New_SubOrder = function (array_table, table_active) {
 		if(name === 'select_suborder' && result[0].NO == null) {buf = {name:'SUBNO', value : '1'}; array_table[array_table.length] = buf; table_active[table_active.length] = 1; uSQL.SQL(InsertSQLStr('suborders',array_table, table_active), 'insert_suborder');}
 		if(name === 'insert_suborder') uSQL.SQL("SELECT ID, SUBNO FROM suborders WHERE SUBNO = '"+buf.value+"' AND ORDER_ID = '"+array_table[array_table.length-2].value+"'", 'id_suborder_save');
 		if(name === 'id_suborder_save') self.emit('save_new_suborder_ok', result[0]); 
+	});
+		
+	uSQL.on('error', function(error){
+		self.emit('error', error.message);
+	});
+};
+
+OrderSQL.prototype.New_SubOrderProd = function (array_table, table_active) {
+	var uSQL = new universal_sql (my_sys.client_mysql());
+	var self = this;
+	
+	uSQL.SQL("SELECT MAX(SUBNO) NO FROM suborders_prod WHERE SUBORDER_ID = '"+array_table[array_table.length-1].value+"'", 'suborders_prod');
+	
+	var buf;
+		
+	uSQL.on('result_sql', function(name, result){
+		if(name === 'suborders_prod' && result[0].NO != null) {buf = {name:'SUBNO', value : result[0].NO+1 }; array_table[array_table.length] = buf; table_active[table_active.length] = 1; uSQL.SQL(InsertSQLStr('suborders_prod', array_table, table_active), 'insert_suborders_prod');}
+		if(name === 'suborders_prod' && result[0].NO == null) {buf = {name:'SUBNO', value : '1'}; array_table[array_table.length] = buf; table_active[table_active.length] = 1; uSQL.SQL(InsertSQLStr('suborders_prod',array_table, table_active), 'insert_suborders_prod');}
+		if(name === 'insert_suborders_prod') uSQL.SQL("SELECT products.NAME, products.UNIT, suborders_prod.ID, suborders_prod.SUBNO FROM suborders_prod, products WHERE suborders_prod.SUBNO = '"+buf.value+"' AND suborders_prod.SUBORDER_ID = '"+array_table[array_table.length-2].value+"' AND products.ID = suborders_prod.PRODUCT_ID", 'id_suborders_prod_save');
+		if(name === 'id_suborders_prod_save') {
+		self.emit('save_new_suborders_prod_ok', result[0]); 
+		if(!array_table[4].value) array_table[4].value = 0;
+		var data = {suborder_id: array_table[5].value ,price: array_table[2].value, number: array_table[3].value, otkat: array_table[4].value};
+		self.AddSubordersProd (result[0].ID, data);
+		}
 	});
 		
 	uSQL.on('error', function(error){
@@ -204,4 +301,98 @@ OrderSQL.prototype.findbankbik = function (bik, no) {
 					self.emit('findbankbik_ok', res, no); 
 				 };
 			});	
+};
+
+/**
+ * Структура представлена в бд в виде:
+ *
+ * (set) suborder:prod:<suborder_id> <id>
+ *
+ * (hashes) suborderprod:<id> {
+ *  price <data.price> - цена руб.
+ * 	number <data.number> - кол-во
+ * 	otkat <data.otkat> - откат руб.
+ * }
+ *
+ * Методы:
+ * AddSubordersProd(id, data) - добовление data.price - цена (руб.), data.number - кол-во, data.otkat - откат (руб.);
+ * 
+ */
+
+OrderSQL.prototype.AddSubordersProd = function (id, data) {
+		var self = this;
+		var q = ['suborderprod:'+id, 'price', data.price, 'number', data.number, 'otkat', data.otkat];
+		client.multi([
+			['hmset', q],
+			['sadd', 'suborder:prod:'+data.suborder_id, id]
+			]).exec(function(err, res) {
+			if (err) {
+					self.emit('err_AddSubordersProd', err);
+			} else {
+					self.emit('ok_Add');
+			};
+		});
+};
+
+OrderSQL.prototype.Buff = function (id) {
+		var self = this;
+		self.FindSubordersProd (1);
+
+		self.on('error', function(err) {
+			self.emit('err_buff:'+err);
+		});
+
+		self.on('ok_FindSubordersProd', function(res) {
+			self.emit('ok_Buff', res);
+		});
+};
+
+OrderSQL.prototype.FindSubordersProd = function (id) {
+		var self = this;
+		var q = ['suborderprod:'+id, 'price', 'number', 'otkat'];
+		client.hmget(q, function(err, res) {
+			if (err) {
+					self.emit('err_FindSubordersProd', err);
+			} else {
+					self.emit('ok_FindSubordersProd', res, id);
+			};
+		});
+};
+
+OrderSQL.prototype.FindSuborders = function (id, name) {
+		var self = this;
+		var data_i = 0;
+		var data = new Object();
+		client.smembers ('suborder:prod:'+id, function(err, res) {
+			if (err) {
+					if(name === 'finished') self.emit('noresult');
+						else elf.emit('err_FindSuborders', data);
+			} else {
+					if(res != 0){
+						data_i = res.length;
+						for(var i=0;i<res.length;i++) {
+							self.FindSubordersProd(res[i]);
+						}
+					}
+					else {
+						if(name === 'finished') self.emit('finished', data, 'FindSuborders');
+						else elf.emit('ok_FindSuborders', data);
+					}
+			};	
+		});
+		
+		self.on('ok_FindSubordersProd', function(res, id) {
+			data_i--;
+			data[''+id] = res;
+			console.log('Вход: '+data);
+			if(data_i===0) {
+				if(name === 'finished') self.emit('finished', data, 'FindSuborders');
+				else elf.emit('ok_FindSuborders', data);
+			}
+		});
+		
+		self.on('err_FindSubordersProd', function(err, id) {
+			data_i--;
+			elf.emit('noresult', err);
+		});
 };

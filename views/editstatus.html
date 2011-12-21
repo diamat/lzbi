@@ -10,13 +10,22 @@
 			$('#sub').attr("disabled", true);
 		});
 		
+		socket.on ('error_go_time_edit2', function(nameuser){
+			$('#editstatus').html('Отказ в продление, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).');
+			$('#sub').attr("disabled", true);
+		});
+		
 		socket.on ('go_time_edit_Ok', function(){
+			socket.emit('simile_save2', '<%= edit.field %>', <%= dateopen %>);
+		});
+		
+		socket.on ('go_time_edit_Ok2', function(){
 			$('#sub').attr("disabled", false);
 			$('#editstatusdiv').hide(); 
 			setTimeout(function() {
-			$('#editstatusdiv').show();
-			$('#sub').attr("disabled", true);			
-		}, 30000);
+				$('#editstatusdiv').show();
+				$('#sub').attr("disabled", true);
+			}, 30000);
 		});
 		
 		setTimeout(function() {
