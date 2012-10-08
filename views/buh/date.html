@@ -1,0 +1,210 @@
+	<% this.extend("layout"); %>
+	<script type="text/javascript">
+	$(document).ready(function() {	
+			$("input[name='date']").mask("99.99.9999");
+					
+			$("#list_bills").dataTable({
+					"sPaginationType": "full_numbers",
+					"aoColumns": [
+									{ "sType": "numeric-url", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sType": "date","sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" }
+								],
+				"fnFooterCallback": function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+						/*
+						 * Calculate the total market share for all browsers in this table (ie inc. outside
+						 * the pagination)
+						 */
+						var iTotalMarket = 0;
+						var iTotalMarket2 = 0;
+						for ( var i=0 ; i<aaData.length ; i++ )
+						{
+							if((aaData[i][6]).toString()!='аннулирован'){
+								var buff = aaData[i][3];
+								buff = parseFloat((buff+'').replace(/\s/g, ''));
+								iTotalMarket += buff;
+								var buff2 = aaData[i][4];
+								buff2 = parseFloat((buff2+'').replace(/\s/g, ''));
+								iTotalMarket2 += buff2;
+							}
+						}
+						
+						/* Calculate the market share for browsers on this page */
+						var iPageMarket = 0;
+						var iPageMarket2 = 0;
+						for ( var i=iStart ; i<iEnd ; i++ )
+						{
+							if((aaData[ aiDisplay[i] ][6]).toString()!='аннулирован'){
+								var buff = aaData[ aiDisplay[i] ][3];
+								buff = parseFloat((buff+'').replace(/\s/g, ''));
+								iPageMarket += buff;
+								var buff2 = aaData[ aiDisplay[i] ][4];
+								buff2 = parseFloat((buff2+'').replace(/\s/g, ''));
+								iPageMarket2 += buff2;
+							}
+						}
+						
+						/* Modify the footer row to match what we want */
+						var nCells = nRow.getElementsByTagName('th');
+						nCells[3].innerHTML =parseFloat(iPageMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+						nCells[4].innerHTML =parseFloat(iPageMarket2).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket2).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+					}
+			});
+			
+			$("#list_pp").dataTable({
+					"sPaginationType": "full_numbers",
+					"aoColumns": [
+									{ "sType": "numeric-url", "sClass": "center" },
+									{ "sType": "numeric", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sType": "date", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center"},
+									{ "sClass": "center"},
+									{ "sClass": "center"}
+								],
+				"fnFooterCallback": function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+						/*
+						 * Calculate the total market share for all browsers in this table (ie inc. outside
+						 * the pagination)
+						 */
+						var iTotalMarket = 0;
+						for ( var i=0 ; i<aaData.length ; i++ )
+						{
+							var buff = aaData[i][5];
+							buff = parseFloat((buff+'').replace(/\s/g, ''));
+							iTotalMarket += buff;
+						}
+						
+						/* Calculate the market share for browsers on this page */
+						var iPageMarket = 0;
+						for ( var i=iStart ; i<iEnd ; i++ )
+						{
+							var buff = aaData[ aiDisplay[i] ][5];
+							buff = parseFloat((buff+'').replace(/\s/g, ''));
+							iPageMarket += buff;
+						}
+						
+						/* Modify the footer row to match what we want */
+						var nCells = nRow.getElementsByTagName('th');
+						nCells[5].innerHTML =parseFloat(iPageMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+					}
+			});
+			
+			$('#datepicker1').datepicker();	
+			$('#datepicker2').datepicker();			
+	});
+	</script>
+	<%@ status %>
+	<%if( billslist.length!=0){%>
+<h1>Список счетов c <%= date1 %> по <%= date2 %> <% if(customer.c_id != "0"){%><a href="/customers/view/main/<%= customer.c_id %>"><%= customer.name %></a><%} else {%> по всем заказчикам<%}%></h1>
+	<div id="list_bill_div">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_bills">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th width="140px">Сумма</th>
+			<th width="140px">Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Менеджер</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%for (var i = 0; i < billslist.length; i++) {%>
+	<% if((customer.c_id).toString() ===  billslist[i].order.c_id || customer.c_id === "0"){ %>
+	<% if(access >  1 || (access === 1 && billslist[i].order.u_id ===  user.id)){ %>
+		<tr class="<% if(billslist[i].status === "2"){%>gradeX<%} else if(billslist[i].status === "1"){%>gradeU<%}else if(billslist[i].accept === "1"){%>gradeA<%}else{%>gradeB<%}%>">
+			<td><a href="/buh/view/bill/<%= billslist[i].bill_id %>"><%= billslist[i].bill_id %></a></td>
+			<td><a href="/customers/view/main/<%= billslist[i].order.c_id %>"><%= billslist[i].order.c_name %></a></td>
+			<td><%= billslist[i].formatdate  %></td>
+			<td><%= billslist[i].formatsum %></td>
+			<td><%= (billslist[i].sum-billslist[i].res_sum).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %></td>
+			<td><%if(billslist[i].inbank.length!=0){%>
+			<%for (var g = 0; g < billslist[i].inbank.length; g++) {%>
+			п/п: <a href="/buh/view/inbank/<%= billslist[i].inbank[g].ib_id %>"><%= billslist[i].inbank[g].ib_id %></a> - сумма: <%= (billslist[i].inbank[g].sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> ; 
+			<% }%>
+			<strong>Итого: <%= (billslist[i].res_sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %></strong>
+			<% } else {%> - <%}%>
+			</td>
+			<td><% if(billslist[i].status === "2"){%>аннулирован<%}else if(billslist[i].status === "1"){%> закрыт <%}else{%>счет открытый<%}%></td>
+			<td><% if(billslist[i].accept === "1"){%>подписан<%}else{%>не подписан<%}%></td>
+			<td><%= billslist[i].order.fio %></td>
+		</tr>
+		<% }}}%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Менеджер</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	</div>
+	<% }%>
+	<%if(inbank_list!=0){%>
+	<h1>Список п/п c <%= date1 %> по <%= date2 %> <% if(customer.c_id != "0"){%><a href="/customers/view/main/<%= customer.c_id %>"><%= customer.name %></a><%} else {%> по всем заказчикам<%}%></h1>
+	<div id="list_inbank_div">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_pp">
+	<thead>
+		<tr>
+			<th width="20px">№</th>
+			<th width="30px">№ б/к</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Кому</th>
+			<th width="140px">Сумма</th>
+			<th>Назначение</th>
+			<th>Менеджер</th>
+		</tr>
+	</thead>
+	<tbody >
+	<% for (var i = 0; i < inbank_list.length; i++) {%>
+	<% if((customer.c_id).toString() === inbank_list[i].c_id || customer.c_id === "0"){ %>
+	<% if(access >  1 || (access === 1 && inbank_list[i].customer.u_id ===  user.id)){ %>
+		<tr class=<% if(inbank_list[i].customer.u_id ===  user.id){ %>"gradeA"<%}else {%>"gradeB"<%}%>>
+			<td><a href="/buh/view/inbank/<%= inbank_list[i].ib_id %>"><%= inbank_list[i].ib_id %></a></td>
+			<td><%= inbank_list[i].no %></td>
+			<td><a href="/customers/view/main/<%= inbank_list[i].c_id %>"><%= inbank_list[i].customer.c_name %></td>
+			<td><%= inbank_list[i].formatdate  %></td>
+			<td><%= inbank_list[i].namecomp %></td>
+			<td><%= inbank_list[i].formatsum %></td>
+			<td><%= inbank_list[i].pop %></td>
+			<td><%= inbank_list[i].customer.fio %></td>
+		</tr>
+		<% }}}%>
+	<tfoot>
+		<tr>
+			<th width="20px">№</th>
+			<th width="30px">№ б/к</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Кому</th>
+			<th>Сумма</th>
+			<th>Назначение</th>
+			<th>Менеджер</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	</div>
+	<% }%>

@@ -3,12 +3,12 @@
 				<%=user.lastname%> <%=user.name%> - <%= user.position%> <%= user.companyname%>
 			</div>
 				<h1>
-				<% main_menu.forEach (function(mmenu){ %>
-				<% if(mmenu.id === action){%> 
-				<%-mmenu.name%> | 
+				<%for (var i = 0; i < main_menu.length; i++) {%>
+				<% if(main_menu[i].id === action){%>
+				<%= main_menu[i].name%> |
 				<%} else {%>
-				<a href="<%-mmenu.url%>"><%-mmenu.name%></a> |
-				<% }}) %>
+				<a href="<%=main_menu[i].url%>"><%=main_menu[i].name%></a> |
+				<% }} %>
 				<a href="/login/logout">Выход</a> 
 				</h1>
-				<%- partial('err-disconnect') %>
+				<%@ err-disconnect %>

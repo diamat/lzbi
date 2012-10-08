@@ -1,0 +1,69 @@
+	<% this.extend('layout'); %>
+	<script type="text/javascript">
+	$(document).ready(function() {						
+			$("#list_bills").dataTable({
+					"sPaginationType": "full_numbers",
+					"aoColumns": [
+									{ "sType": "numeric-url", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sType": "date", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center"},
+									{ "sClass": "center"},
+									{ "sClass": "center"}
+								]
+			});
+			
+	});
+	</script>
+	<%@ status %>
+	<h1>Список последних неподписанных счетов:<img id="list_bill" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="list_bill_div">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_bills">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Счет от компании</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Менеджер</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%if(billslist)%>
+	<%for (var i = 0; i < billslist.length; i++) {%>
+	<% if(billslist[i].status === "0" && billslist[i].accept != "1"){ %>
+		<tr class="<% if(billslist[i].status === "2"){%>gradeX<%} else if(billslist[i].status === "1"){%>gradeU<%}else if(billslist[i].accept === "1"){%>gradeA<%}else{%>gradeB<%}%>">
+			<td><a href="/buh/view/bill/<%= billslist[i].bill_id %>"><%= billslist[i].bill_id %></a></td>
+			<td><a href="/customers/view/main/<%= billslist[i].order.c_id %>"><%= billslist[i].order.c_name %></a></td>
+			<td><%= billslist[i].formatdate  %></td>
+			<td><%= billslist[i].sum %></td>
+			<td><%= billslist[i].sum-billslist[i].res_sum %></td>
+			<td><%= billslist[i].namecomp %></td>
+			<td><% if(billslist[i].status === "2"){%>аннулирован<%}else if(billslist[i].status === "1"){%> закрыт <%}else{%>счет не закрыт<%}%></td>
+			<td><% if(billslist[i].accept === "1"){%>подписан<%}else{%>не подписан<%}%></td>
+			<td><%= billslist[i].order.fio %></td>
+		</tr>
+		<% }}%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Счет от компании</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Менеджер</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	</div>

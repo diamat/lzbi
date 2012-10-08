@@ -1,0 +1,164 @@
+	<% this.extend("layout"); %>
+	<script type="text/javascript">
+	var n_poddon = <%if(list_customers && list_customers.length != 0){%><%= list_customers[0].number %><%}else{%>0<%}%>;
+	
+	function sumNumber() 
+				{ 
+					var number = $("input[name='number_p']").val();
+					socket.emit("sum_prod", n_poddon.toString(), number);
+				} 
+	
+	$(document).ready(function() {			
+			$("input[name='date']").mask("99.99.9999");
+			
+			$("#list_prod").dataTable({
+				"sPaginationType": "full_numbers",
+				"aaSorting": [[ 0, "desc" ]],
+				"aoColumns": [
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" }
+							]
+			});
+			
+		
+		<%  if(access >  0 && access !=  1.5){%>		
+			$("form").validate({
+					   submitHandler: function() {
+						 flag_valid = true;
+					   }
+					});
+		
+			$('form').submit(function(){
+				if(flag_valid === true){
+					name_form = $(this).attr('id');
+					flag_valid = false;
+					$('#pbdiv').show();
+					var array_table = $('#'+name_form+' *').serializeArray();
+					$('#'+name_form+' *').attr("disabled", true);
+					$('#status').text('Подключение к серверу.').css('color','#333');
+					$('#progressbar').progressbar({ value: 0 });
+					buff_msg = 'new_shipment';
+					array_table[array_table.length] = {name: 'c_id', value:'<%= prod.bill.order.c_id %>'};
+					array_table[array_table.length] = {name: 'bill_id', value:'<%= prod.bill.bill_id %>'};
+					array_table[array_table.length] = {name: 'prod_id', value:'<%= prod.prod_id %>'};
+					buff_arr = array_table;
+					socket.emit(buff_msg, array_table);
+				}
+				return false;
+			});
+			
+			
+			$("select[name='p_id']").change(function(){
+						var selectID = $("select[name='p_id']").val();
+						<%if(list_customers){%>
+						<%for (var i = 0; i < list_customers.length; i++) {%>
+							 if(selectID === '<%= list_customers[i].c_id %>') {$('#number').text('<%= list_customers[i].number %> <%= prod.unitname %>'); n_poddon = <%= list_customers[i].number  %>;}
+						<% }} %>
+					});
+					
+			$("input[name='no_save']").click(function(){
+				buff_msg = 'not';
+				$('#'+name_form+' *').attr("disabled", false);
+				$('#prod.bill *').attr("disabled", false);
+				$('#pbdiv').hide();
+			});
+				
+			//socket
+			socket.on('start_save', function () {
+				buff_msg = 'not';
+				$('#status').text('Обработка данных на сервере.');
+				$('#progressbar').progressbar({ value: 35 });
+			});
+			
+			socket.on('err_sum', function (err) {
+				buff_msg = 'not';
+				$('#pbdiv').show();
+				$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+				setTimeout(function() {
+					$('#'+name_form+' *').attr("disabled", false);
+					$('#prod.bill *').attr("disabled", false);
+					$('#pbdiv').hide();
+				}, 6000);
+			});
+			
+			socket.on('end_sum', function (sum) {
+				$('#sum_number').text(sum+' <%= prod.unitname %>');
+			});
+			
+			socket.on('end_save', function (new_suborder) {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				setTimeout(function() {
+					$('#status').text('Обновление страницы.');
+					$('#progressbar').progressbar({ value: 100 });
+					location.href='/shipment/new/newship/<%= prod.bill.bill_id%>/<%= prod.bill.prod_id%>';
+				}, 100);
+			});
+				
+			socket.on('err_save', function (err) {
+			$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+			setTimeout(function() {
+					$('#'+name_form+' *').attr("disabled", false);
+					$('#prod.bill *').attr("disabled", false);
+					$('#pbdiv').hide();
+				}, 6000);
+			});
+			
+			$('#datepicker').datepicker();
+		<%}%>
+						
+	});
+	</script>
+	<%@ status %>
+	<h1>Счет <a href="/buh/view/bill/<%= prod.bill.bill_id %>">№<%= prod.bill.bill_id%> от <%=  prod.bill.date%></a></h1>
+	<strong>Договор:</strong> <a href="/orders/view/main/<%= prod.bill.order.o_id %>"><%= prod.bill.order.o_name %></a> <strong>Приложение:</strong> <a href="/orders/view/suborder/<%= prod.bill.order.subo_id %>"><%= prod.bill.order.subo_name %></a><br>
+	<strong>Заказчик:</strong> <a href="/customers/view/main/<%= prod.bill.order.c_id %>"><%= prod.bill.order.c_name %></a> <strong>Менеджер:</strong> <%= prod.bill.order.fio %><br><br>
+	<strong>Продукция:</strong> <%= prod.prodname %> <%=prod.addname %><br>
+	<strong>Цена:</strong> <%= prod.bill.formatprice %> руб.<br>
+	<strong>Кол-во:</strong> <%= prod.bill.number%> <%= prod.unitname %><br>
+	<strong>Сумма по счету:</strong> <%= prod.bill.sum %> руб.<br>
+	<strong>Отгружено:</strong> 0
+	<h1>Добавить отгрузку</h1>
+		<form method="post" id="shipment" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+		<tr>
+		<td align="right">Поставщик:</td>
+		<td><select name="p_id">
+		<%if(list_customers){%>
+		<%for (var i = 0; i < list_customers.length; i++) {%>
+			<%if(list_customers[i].typepg === "0"){%><option value="<%= list_customers[i].c_id %>"><%= list_customers[i].formatname  %> </option>
+			<% }}} %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td width="20%" align="right">Кол-во на поддоне:</td>
+		<td width="80%"><span id="number"><%if(list_customers && list_customers.length != 0){%><%= list_customers[0].number %><%}else{%>0<%}%> <%= prod.unitname %></span></td>
+	  </tr>
+	  <tr>
+		<td align="right">Кол-во поддонов (шт.):</td>
+		<td><input name="number_p" type="text" size="20" class="required"> <a href="javascript: sumNumber();">пересчитать в <%= prod.unitname %></a></td>
+	  </tr>
+	  <tr>
+		<td align="right">Общее кол-во (<%= prod.unitname %>):</td>
+		<td><span id="sum_number">0</span></td>
+	  </tr>
+	  <tr>
+		<td align="right">Дата отгрузки:</td>
+		<td><input name="date" id="datepicker" type="text" size="20" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Примечание:</td>
+		<td><textarea name="note" cols="60" rows="5"></textarea></td>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>

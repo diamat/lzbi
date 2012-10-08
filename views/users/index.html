@@ -1,11 +1,12 @@
+	<% this.extend('layout'); %>
 	<script type="text/javascript">
 	$(document).ready(function() {	
 					$('#list_user').dataTable( {
 					"sPaginationType": "full_numbers",
-					 "aaData": [	
-								<% table.forEach (function(users){ %>
-								["<%= users.lastname %> <%= users.name %>","<a href='/<%= user.role %>/users/edit/user/<%= users.username %>'><%= users.username %></a>","<%= users.role %>","<%= users.position %>","<%= users.company %>"],
-								<% }) %>
+					 "aaData": [
+								<%for (var i = 0; i < table.length; i++) {%>
+								["<%= table[i].lastname %> <%= table[i].name %>","<a href='/users/edit/user/<%= table[i].u_id %>'><%= table[i].username %></a>","<%= table[i].role %>","<%= table[i].position %>","<%= table[i].company %>"],
+								<% } %>
 								],
 					"aoColumns": [
 									{ "sTitle": "Фамилия Имя" },
@@ -73,7 +74,7 @@
 							var array_table = $('#save').serializeArray();
 							$('#list_user').dataTable().fnAddData( [
 							array_table[0].value+" "+array_table[1].value,
-							"<a href='/<%= user.role %>/users/edit/user/"+array_table[5].value+"'>"+array_table[5].value+"</a>",
+							"<a href='/users/edit/user/"+array_table[5].value+"'>"+array_table[5].value+"</a>",
 							array_table[4].value,
 							array_table[2].value,
 							array_table[3].value
@@ -96,7 +97,7 @@
 					
 			});
 	</script>
-	<%- partial('status') %>
+	<%@ status %>
 	<h1>Новый пользователь</h1>
 	<form method="post" id="save" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
@@ -115,9 +116,9 @@
 	  <tr>
 		<td align="right">Компания:</td>
 		<td><select name="company">
-		<% listcustomers.forEach (function(customers){ %>
-			<option value="<%= customers.ID %>"><%= customers.NAME_SOB %>&nbsp;&laquo;<%= customers.NAME %>&raquo;</option>
-			<% }) %>
+		<%for (var i = 0; i < listcustomers.length; i++) {%>
+			<option value="<%= listcustomers[i].id %>"><%= listcustomers[i].name %></option>
+			<% } %>
 		</select></td>
 	  </tr>
 	  <tr>
@@ -125,6 +126,8 @@
 		<td><select name="role" >
 			<option value="manager">manager&nbsp;&nbsp;</option>
 			<option value="admin">admin&nbsp;&nbsp;</option>
+			<option value="bigboss">bigboss&nbsp;&nbsp;</option>
+			<option value="buhmanager">buhmanager&nbsp;&nbsp;</option>
 		</select></td>
 	  </tr>
 	  <tr>

@@ -1,7 +1,8 @@
+	<% this.extend("layout"); %>
 	<script type="text/javascript">
 	$(document).ready(function() {	
 					
-					$("input[name='DATE']").mask("99.99.9999");
+					$("input[name='date']").mask("99.99.9999");
 					
 					
 					$('form').validate({
@@ -26,7 +27,7 @@
 							name_form = $(this).attr('id');
 							if(flag_valid === true){
 								flag_valid = false;
-								socket.emit('simile_save', 'orders/edit/main/<%= dataedit.ID %>', <%= dateopen %>);
+								socket.emit('simile_save', 'orders/edit/main/<%= dataedit.id %>', <%= dateopen %>);
 							}
 							return false;
 					});
@@ -34,16 +35,15 @@
 					socket.on('TimeDocSimile', function (msg) {
 						if(msg === 'ok'){
 							flag_valid = false;
-							flag_valid = false;
 							$('#pbdiv').show();
 							var array_table = $('#'+name_form).serializeArray();
 							$('#'+name_form+" *").attr("disabled", true);
 							$('#status').text('Подключение к серверу.').css('color','#333');
 							$('#progressbar').progressbar({ value: 0 });
-							buff_msg = 'update_form_save';
+							buff_msg = 'update';
 							buff_arr = array_table;
-							id = <%= dataedit.ID %>;
-							socket.emit(buff_msg, name_form, <%= dataedit.ID %>, array_table);
+							id = <%= dataedit.c_id %>;
+							socket.emit(buff_msg, name_form , <%= dataedit.id %>, array_table);
 						} else {
 							$('#pbdiv').show();
 							$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
@@ -51,7 +51,7 @@
 					});
 					
 					$('#back').click(function(){
-						location.href='/<%= user.role %>/orders/view/main/<%= dataedit.ID %>';
+						location.href='/orders/view/main/<%= dataedit.id %>';
 					});
 					
 					
@@ -68,7 +68,7 @@
 						setTimeout(function() {
 							$('#status').text('Переход на страницу данных о заказе.');
 							$('#progressbar').progressbar({ value: 100 });
-							location.href='/<%= user.role %>/orders/view/main/<%= dataedit.ID %>';
+							location.href='/orders/view/main/<%= dataedit.id %>';
 						}, 100);
 					});
 				
@@ -83,45 +83,30 @@
 					$('#datepicker').datepicker();					
 			});
 	</script>
-	<%- partial('status') %>
-	<%- partial('editstatus') %>
+	<%@ status %>
+	<%@ editstatus %>
 	<h1>Редактирование договора</h1>
-	<form method="post" id="order_main" action="/">
+	<form method="post" id="order" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
-		<td align="right">Заказчик*:</td>
-		<td><select name="CUSTOMER_ID">
-		<% customers.forEach (function(customer){ %>
-			<option value="<%= customer.ID %>"  <% if(dataedit.CUSTOMER_ID == customer.ID) { %> selected<%}%>><%= customer.NAME %>&nbsp;&nbsp;<%= customer.NAME_SOB %></option>
-			<% }) %>
+	  <tr>
+	  <td align="right">Заказчик*:</td>
+		<td><select name="c_id">
+		<%for (var i = 0; i < list_customers.length; i++) {%>
+			<%if(list_customers[i].u_id === user.id && user.role != "bigboss"){%><option value="<%= list_customers[i].c_id %>" <% if(dataedit.c_id === list_customers[i].c_id) { %> selected<%}%>><%= list_customers[i].name  %>  </option>
+			<% } else {%><option value="<%= list_customers[i].c_id %>" <% if(dataedit.c_id === list_customers[i].c_id) { %> selected<%}%>><%= list_customers[i].name  %> </option><% }}%>
 		</select></td>
 	  </tr>
 	  <tr>
 		<td width="20%" align="right">Название:*</td>
-		<td width="80%"><input name="NAMEORDERS" type="text" size="20" class="required" value="<%= dataedit.NAMEORDERS%>"></td>
-	  </tr>
-	  <tr>
-		<td align="right">Тип договора:</td>
-		<td><select name="TYPE">
-			<option value="0" <% if(dataedit.TYPE === 0) { %> selected<%}%>>Поставка товара</option>
-			<option value="1" <% if(dataedit.TYPE === 1) { %> selected<%}%>>Оказание услуг</option>
-		</select></td>
+		<td width="80%"><input name="name" type="text" size="20" value="<%= dataedit.name %>"  autocomplete="off" class="required"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Дата заключения:</td>
-		<td><input name="DATE" id="datepicker" type="text" size="20" value="<%= dataedit.DATE%>"></td>
-	  </tr>
-	  <tr>
-		<td align="right">Статус договора:</td>
-		<td><select name="STATUS">
-			<option value="0" <% if(dataedit.STATUS === 0) { %> selected<%}%>>Согласование</option>
-			<option value="1" <% if(dataedit.STATUS === 1) { %> selected<%}%>>На подписании</option>
-			<option value="2" <% if(dataedit.STATUS === 2) { %> selected<%}%>>Подписан</option>
-			<option value="3" <% if(dataedit.STATUS === 3) { %> selected<%}%>>Приостановлен</option>
-		</select></td>
+		<td><input name="date" id="datepicker" type="text" size="20" autocomplete="off" value="<%= dataedit.formatdate %>"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Примечание:</td>
-		<td><textarea name="note" cols="60" rows="5"><%= dataedit.NOTE%></textarea>
+		<td><textarea name="note" cols="60" rows="5" ><%= dataedit.note %></textarea></td>
 	  </tr>
 	  <tr>
 		<td align="right"></td>

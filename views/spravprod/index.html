@@ -1,0 +1,123 @@
+	<% this.extend('layout'); %>
+	<script type="text/javascript">
+	$(document).ready(function() {	
+					$('#list_prod').dataTable( {
+					"sPaginationType": "full_numbers",
+					 "aaData": [
+								<%for (var i = 0; i < table.length; i++) {%>
+								["<a href='/spravprod/edit/prod/<%= table[i].prod_sid %>'><%= table[i].prod_sid %></a>","<%= table[i].name %>","<%= table[i].unitname %>","<%= table[i].groupname %>"],
+								<% } %>
+								],
+					"aoColumns": [
+									{ "sTitle": "№" },
+									{ "sTitle": "Название" },
+									{ "sTitle": "Ед. изм." },
+									{ "sTitle": "Группа" }
+								]
+					});
+					
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+					
+					$("#save").validate({
+					   submitHandler: function() {
+						flag_valid = true;
+					   }
+					});
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#save *').attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+
+					
+					$('#save').submit(function(){
+							if(flag_valid === true){
+								flag_valid = false;
+								$('#pbdiv').show();
+								var array_table = $('#save').serializeArray();
+								$('#save *').attr("disabled", true);
+								$('#status').text('Подключение к серверу.').css('color','#333');
+								$('#progressbar').progressbar({ value: 0 });
+								buff_msg = 'new_user';
+								buff_arr = array_table;
+								socket.emit('new_prod', array_table);
+							}
+							return false;
+					});
+					
+					socket.on('start_save', function () {
+					buff_msg = 'not';
+					$('#status').text('Обработка данных на сервере.');
+					$('#progressbar').progressbar({ value: 35 });
+						});
+									
+					socket.on('end_save', function (prod_sid) {
+							$('#status').text('Данные на сервере сохраненны.');
+							$('#progressbar').progressbar({ value: 70 });
+							$('#save *').attr("disabled", false);
+							var array_table = $('#save').serializeArray();
+							$('#list_prod').dataTable().fnAddData( [
+							"<a href='/spravprod/edit/prod/"+prod_sid+"'>"+prod_sid+"</a>",
+							array_table[1].value,
+							array_table[0].value,
+							array_table[2].value
+							]);
+							$('#status').text('Добовление данных к таблице.');
+							$('#save')[0].reset();
+							$('#progressbar').progressbar({ value: 100 });
+							setTimeout(function() {
+								$('#pbdiv').hide();
+							}, 1000);
+						});
+					
+					socket.on('err_save', function (err) {
+						$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+						setTimeout(function() {
+								$('#save *').attr("disabled", false);
+								$('#pbdiv').hide();
+							}, 4000);
+					});
+					
+			});
+	</script>
+	<%@ status %>
+	<h1>Новый товар</h1>
+	<form method="post" id="save" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	   <tr>
+		<td align="right">Группа товара:</td>
+		<td><select name="group" >
+			<%for (var i = 0; i < group.length; i++) {%>
+			<option value="<%= group[i].id %>"><%=group[i].name %>&nbsp;</option>
+			<% } %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td width="10%" align="right">Название*:</td>
+		<td width="90%"><input name="name" type="text" size="40" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Еденицы измерения:</td>
+		<td><select name="unit" >
+			<%for (var i = 0; i < unit.length; i++) {%>
+			<option value="<%= unit[i].id %>"><%=unit[i].name %>&nbsp;</option>
+			<% } %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>
+	<h1>Список продукции</h1>
+	<div id="demo">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_prod"></table>
+
+	</div>
+	<div class="spacer"></div>

@@ -1,101 +1,120 @@
+	<% this.extend("layout"); %>
 	<script type="text/javascript">
 	$(document).ready(function() {	
 					
-			$("input[name='DATE']").mask("99.99.9999");
-					
-			$('form').validate({
-				submitHandler: function() {
-					flag_valid = true;
-				}
-			});
-					
-			$("input:text").keydown(function (event) {
-				if (event.keyCode == 13) {
-					event.preventDefault();
-				}
-			});
-					
-			$("input[name='no_save']").click(function(){
-				buff_msg = 'not';
-				$('#'+name_form+" *").attr("disabled", false);
-				$('#pbdiv').hide();
-			});
-					
-			$('form').submit(function(){
-				name_form = $(this).attr('id');
-				if(flag_valid === true){
-					flag_valid = false;
-					socket.emit('simile_save', 'orders/edit/suborder/<%= dataedit.ID %>', <%= dateopen %>);
-				}
-				return false;
-			});
-					
-			socket.on('TimeDocSimile', function (msg) {
-				if(msg === 'ok'){
-					flag_valid = false;
-					flag_valid = false;
-					$('#pbdiv').show();
-					var array_table = $('#'+name_form).serializeArray();
-					$('#'+name_form+" *").attr("disabled", true);
-					$('#status').text('Подключение к серверу.').css('color','#333');
-					$('#progressbar').progressbar({ value: 0 });
-					buff_msg = 'update_form_save';
-					buff_arr = array_table;
-					id = <%= dataedit.ID %>;
-					socket.emit(buff_msg, name_form, <%= dataedit.ID %>, array_table);
-				} else {
-					$('#pbdiv').show();
-					$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
-				}
-			});
-					
-			$('#back').click(function(){
-				location.href='/<%= user.role %>/orders/view/suborder/<%= dataedit.ID %>';
-			});
+					$("input[name='date']").mask("99.99.9999");
 					
 					
-			//socket
-			socket.on('start_save', function () {
-				buff_msg = 'not';
-				$('#status').text('Обработка данных на сервере.');
-				$('#progressbar').progressbar({ value: 35 });
-			});
+					$('form').validate({
+					   submitHandler: function() {
+						flag_valid = true;
+					   }
+					});
 					
-			socket.on('end_save', function () {
-				$('#status').text('Данные на сервере сохраненны.');
-				$('#progressbar').progressbar({ value: 70 });
-				setTimeout(function() {
-					$('#status').text('Переход на страницу данных о заказе.');
-					$('#progressbar').progressbar({ value: 100 });
-					location.href='/<%= user.role %>/orders/view/suborder/<%= dataedit.ID %>';
-				}, 100);
-			});
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#'+name_form+" *").attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+					
+					$('form').submit(function(){
+							name_form = $(this).attr('id');
+							if(flag_valid === true){
+								flag_valid = false;
+								socket.emit('simile_save', 'orders/edit/suborder/<%= dataedit.id %>', <%= dateopen %>);
+							}
+							return false;
+					});
+					
+					socket.on('TimeDocSimile', function (msg) {
+						if(msg === 'ok'){
+							flag_valid = false;
+							$('#pbdiv').show();
+							var array_table = $('#'+name_form).serializeArray();
+							$('#'+name_form+" *").attr("disabled", true);
+							$('#status').text('Подключение к серверу.').css('color','#333');
+							$('#progressbar').progressbar({ value: 0 });
+							buff_msg = 'update';
+							var buff_obj = {name:'o_id', value : '<%= dataedit.o_id %>'};
+							array_table[array_table.length] = buff_obj;
+							var buff_obj = {name:'sub_no', value : '<%= dataedit.sub_no %>'};
+							array_table[array_table.length] = buff_obj;
+							buff_arr = array_table;
+							id = <%= dataedit.c_id %>;
+							socket.emit(buff_msg, name_form , <%= dataedit.id %>, array_table);
+						} else {
+							$('#pbdiv').show();
+							$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
+						}
+					});
+					
+					$('#back').click(function(){
+						location.href='/orders/view/suborder/<%= dataedit.id %>';
+					});
+					
+					
+					//socket
+					socket.on('start_save', function () {
+						buff_msg = 'not';
+						$('#status').text('Обработка данных на сервере.');
+						$('#progressbar').progressbar({ value: 35 });
+					});
+					
+					socket.on('end_save', function () {
+						$('#status').text('Данные на сервере сохраненны.');
+						$('#progressbar').progressbar({ value: 70 });
+						setTimeout(function() {
+							$('#status').text('Переход на страницу данных о заказе.');
+							$('#progressbar').progressbar({ value: 100 });
+							location.href='/orders/view/suborder/<%= dataedit.id %>';
+						}, 100);
+					});
 				
-			socket.on('err_save', function (err) {
-			$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
-			setTimeout(function() {
-					$('#'+name_form+" *").attr("disabled", false);
-					$('#pbdiv').hide();
-				}, 6000);
-			});
+					socket.on('err_save', function (err) {
+					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+					setTimeout(function() {
+							$('#'+name_form+" *").attr("disabled", false);
+							$('#pbdiv').hide();
+						}, 6000);
+					});
 					
-			$('#datepicker').datepicker();					
-	});
+					$('#datepicker').datepicker();					
+			});
 	</script>
-	<%- partial('status') %>
-	<%- partial('editstatus') %>
-	<h1>Редактирование приложения</h1>
-	<form method="post" id="suborder_main" action="/">
+	<%@ status %>
+	<%@ editstatus %>
+	<h1>Редактирование договора</h1>
+	<form method="post" id="suborder" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	  <tr>
 		<td width="20%" align="right">Название:*</td>
-		<td width="80%"><input name="NAME" type="text" size="20" class="required" value="<%= dataedit.NAME%>"></td>
+		<td width="80%"><input name="name" type="text" size="20" autocomplete="off" value="<%= dataedit.name %>" class="required"></td>
 	  </tr>
+	  <tr>
+	  <td align="right">Статус приложения:</td>
+		<td><select name="status">
+		<%for (var i = 0; i < status.length; i++) {%>
+			<option value="<%= status[i].id %>"  <% if(dataedit.status === status[i].id) { %> selected<%}%>><%= status[i].name  %>&nbsp;&nbsp;</option>
+			<% } %>
+		</select></td>
+	  </tr>
+	   <tr>
+		<td align="right">Номер заявки:</td>
+		<td><input name="znubmer" type="text" size="20" autocomplete="off" value="<%= dataedit.znubmer %>"></td>
+	  </tr>
+	  <tr>
 		<td align="right">Дата заключения:</td>
-		<td><input name="DATE" id="datepicker" type="text" size="20" value="<%= dataedit.SODATE%>"></td>
+		<td><input name="date" id="datepicker" type="text" size="20" value="<%= dataedit.formatdate %>"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Примечание:</td>
-		<td><textarea name="note" cols="60" rows="5"><%= dataedit.NOTE%></textarea>
+		<td><textarea name="note" cols="60" rows="5" ><%= dataedit.note %></textarea></td>
 	  </tr>
 	  <tr>
 		<td align="right"></td>

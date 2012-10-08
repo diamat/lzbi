@@ -1,57 +1,120 @@
-//customers-val.js
+//orders-val.js
 
-var process = require('events');
-var check = require('validator').check;
-var sys = require('util');
-
+var form = require('form');
 
 /**
- * скрипты валидации таблиц customers
+ * скрипты валидации таблиц orders
  *
 */
+var formval = [];
 
-var OrdersVal = module.exports = function () {
+//formOrder
+formval[0] = {
+	c_id: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'C_ID не указан'),
+		form.validator(form.Validator.isNumeric, 'C_ID заказчика не является числом')
+	],
+	name: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'Название договора не указано'),
+		form.validator(form.Validator.len, 1, 200, 'Число знаков "название договора" превышает 200 символов')
+	],
+	date: [
+		form.validator(form.Validator.notEmpty, 'Дата закючения договора не указанна!'),
+		form.validator(form.Validator.isNumeric, 'Дата закючения договора не является числом')
+	]
+};
+
+//formSubOrder
+formval[1] = {
+	o_id: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'O_ID не указан'),
+		form.validator(form.Validator.isNumeric, 'O_ID заказчика не является числом')
+	],
+	name: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'Название приложения не указано'),
+		form.validator(form.Validator.len, 1, 200, 'Число знаков "название приложения" превышает 200 символов')
+	],
+	date: [
+		form.validator(form.Validator.notEmpty, 'Дата закючения приложения не указанна!'),
+		form.validator(form.Validator.isNumeric, 'Дата закючения приложения не является числом')
+	]
+};
+
+//formSubOrderProd
+formval[2] = {
+	prod_sid: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'prod_sid не указан'),
+		form.validator(form.Validator.isNumeric, 'prod_sid не является числом')
+	],
+	subo_id: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'subo_id не указан'),
+		form.validator(form.Validator.isNumeric, 'subo_id не является числом')
+	],
+	price: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'Цена не указан'),
+		form.validator(form.Validator.isFloat, 'Цена не является Float (разделителем является точка)')
+	],
+	number: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'Кол-во не указан'),
+		form.validator(form.Validator.isFloat, 'Кол-во не является Float (разделителем является точка)')
+	]
 	
-	process.EventEmitter.call(this);
 };
 
-sys.inherits(OrdersVal, process.EventEmitter);
 
-OrdersVal.prototype.Orders = function (array_val, table_active) {
-	var self = this;
-	try {
-		if(table_active[2] === 1) check(array_val[2].value, 'Поле "Тип договора" не соответсвует типу').len(1,1).isNumeric(); 
-		if(table_active[4] === 1) check(array_val[4].value, 'Поле "Статус договора" не соответсвует типу').len(1,1).isNumeric(); 
-		setTimeout(function() {
-			self.emit('valid_OK');
-		}, 10);
-	} catch (e) {
-		setTimeout(function() {
-			self.emit('valid_error',e.message);
-		}, 10);
-	}
+formval[3] = {
+	price: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.isFloat, 'Цена не является Float (разделителем является точка)')
+	],
+	number: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.isFloat, 'Кол-во не является Float (разделителем является точка)')
+	]
+	
 };
 
-OrdersVal.prototype.SubOrdersProd = function (array_val, table_active) {
-	var self = this;
-	try {
-		if(table_active[0] === 1) check(array_val[0].value, 'Поле "Продукция/услуги" не соответсвует типу').isFloat(); 
-		if(table_active[2] === 1) check(array_val[2].value, 'Поле "Цена" не соответсвует типу').isFloat(); 
-		if(table_active[3] === 1) check(array_val[3].value, 'Поле "Кол-во" не соответсвует типу').isFloat(); 
-		if(table_active[4] === 1) check(array_val[4].value, 'Поле "Откат" не соответсвует типу').isFloat(); 
-		setTimeout(function() {
-			self.emit('valid_OK');
-		}, 10);
-	} catch (e) {
-		setTimeout(function() {
-			self.emit('valid_error',e.message);
-		}, 10);
-	}
+//formBillMain
+formval[4] = {
+	c_id: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'C_ID не указан'),
+		form.validator(form.Validator.isNumeric, 'C_ID заказчика не является числом')
+	],
+	subo_id: [
+		form.filter(form.Filter.trim),
+		form.validator(form.Validator.notEmpty, 'SubO_ID не указан'),
+		form.validator(form.Validator.isNumeric, 'SubO_ID заказчика не является числом')
+	]
+	
 };
 
-OrdersVal.prototype.empty = function () {
-	var self = this;
-	setTimeout(function() {
-		self.emit('valid_OK');
-	}, 10);
-};
+
+exports.validForm = function (data, id, callback) {
+	var textForm = form.create(formval[id]);
+	//console.log(data);
+	var err = '';
+	/*var buf = JSON.stringify(data);
+	console.log(buf);
+	buf = {'u_id':'2','inn':'135asf','forma_sob':'124'};
+	console.log(buf);*/
+	textForm.process(data, function(error, res) {
+		if(error) {
+			console.log(error);
+			for (key in error) {
+				err = err + ' ' + error[key]
+			}
+			console.log(err);
+			callback (err);
+		}
+		else callback(null, 'Ok');
+	});
+}

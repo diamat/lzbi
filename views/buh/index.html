@@ -1,0 +1,270 @@
+	<% this.extend("layout"); %>
+	<script type="text/javascript">
+	$(document).ready(function() {	
+			$("input[name='date']").mask("99.99.9999");
+					
+			$("#list_bills").dataTable({
+					"sPaginationType": "full_numbers",
+					"aoColumns": [
+									{ "sType": "numeric-url", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sType": "date","sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" }
+								],
+				"fnFooterCallback": function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+						/*
+						 * Calculate the total market share for all browsers in this table (ie inc. outside
+						 * the pagination)
+						 */
+						var iTotalMarket = 0;
+						var iTotalMarket2 = 0;
+						for ( var i=0 ; i<aaData.length ; i++ )
+						{
+							if((aaData[i][6]).toString()!='аннулирован'){
+								var buff = aaData[i][3];
+								buff = parseFloat((buff+'').replace(/\s/g, ''));
+								iTotalMarket += buff;
+								var buff2 = aaData[i][4];
+								buff2 = parseFloat((buff2+'').replace(/\s/g, ''));
+								iTotalMarket2 += buff2;
+							}
+						}
+						
+						/* Calculate the market share for browsers on this page */
+						var iPageMarket = 0;
+						var iPageMarket2 = 0;
+						for ( var i=iStart ; i<iEnd ; i++ )
+						{
+							if((aaData[ aiDisplay[i] ][6]).toString()!='аннулирован'){
+								var buff = aaData[ aiDisplay[i] ][3];
+								buff = parseFloat((buff+'').replace(/\s/g, ''));
+								iPageMarket += buff;
+								var buff2 = aaData[ aiDisplay[i] ][4];
+								buff2 = parseFloat((buff2+'').replace(/\s/g, ''));
+								iPageMarket2 += buff2;
+							}
+						}
+						
+						/* Modify the footer row to match what we want */
+						var nCells = nRow.getElementsByTagName('th');
+						nCells[3].innerHTML =parseFloat(iPageMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+						nCells[4].innerHTML =parseFloat(iPageMarket2).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket2).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+					}
+			});
+			
+			$("#list_pp").dataTable({
+					"sPaginationType": "full_numbers",
+					"aoColumns": [
+									{ "sType": "numeric-url", "sClass": "center" },
+									{ "sType": "numeric", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sType": "date", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center"},
+									{ "sClass": "center"},
+									{ "sClass": "center"}
+								],
+				"fnFooterCallback": function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+						/*
+						 * Calculate the total market share for all browsers in this table (ie inc. outside
+						 * the pagination)
+						 */
+						var iTotalMarket = 0;
+						for ( var i=0 ; i<aaData.length ; i++ )
+						{
+							var buff = aaData[i][5];
+							buff = parseFloat((buff+'').replace(/\s/g, ''));
+							iTotalMarket += buff;
+						}
+						
+						/* Calculate the market share for browsers on this page */
+						var iPageMarket = 0;
+						for ( var i=iStart ; i<iEnd ; i++ )
+						{
+							var buff = aaData[ aiDisplay[i] ][5];
+							buff = parseFloat((buff+'').replace(/\s/g, ''));
+							iPageMarket += buff;
+						}
+						
+						/* Modify the footer row to match what we want */
+						var nCells = nRow.getElementsByTagName('th');
+						nCells[5].innerHTML =parseFloat(iPageMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+					}
+			});
+			
+			$('form[name="dateform"]').submit(function(){
+					name_form = $(this).attr('id');
+					var array_table = $('#'+name_form+' *').serializeArray();
+					$('form *').attr("disabled", true);
+					socket.emit('date_format', array_table);
+				return false;
+			});
+			
+			//socket
+			socket.on('end_format', function (date1, date2, c_id) {
+				location.href='/<%= action%>/date/'+name_form+'/'+date1+'/'+date2+'/'+c_id;
+			});
+			
+			socket.on('err_date', function () {
+				alert('Дата "От" больше Даты "До".');
+				$('form *').attr("disabled", false);
+			});
+			
+			socket.on('err_NaN', function () {
+				alert('Одной из полей Дата - пустое');
+				$('form *').attr("disabled", false);
+			});
+			
+			
+			$('#datepicker1').datepicker();	
+			$('#datepicker2').datepicker();	
+			$('#datepicker3').datepicker();	
+			$('#datepicker4').datepicker();			
+			$('#list_bills_date_div').hide();	
+			$('#list_inbank_date_div').hide();
+			$('#pp_div').hide();				
+	});
+	</script>
+	<%@ status %>
+	<h1>Поиск счетов за период:<img id="list_bills_date" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="list_bills_date_div">
+	<form method="post" name='dateform' id="bill" action="/">
+	От <input name="date" id="datepicker1" type="text" size="15"> 
+	до <input name="date" id="datepicker2" type="text" size="15"><br>
+	клиент <select name="c_id">
+		<option value="0">по всем клиентам </option>
+		<%for (var i = 0; i < list_customers.length; i++) {%>
+			<%if(list_customers[i].u_id === user.id || access >  1){%><option value="<%= list_customers[i].c_id %>"><%= list_customers[i].formatname  %> </option>
+			<% }} %>
+		</select><br><button type="subbutton" id="sub">Найти</button>
+	</form>
+	</div>
+<h1>Список последних счетов:<img id="list_bill" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="list_bill_div">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_bills">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th width="140px">Сумма</th>
+			<th width="140px">Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Менеджер</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%if(billslist)%>
+	<%for (var i = 0; i < billslist.length; i++) {%>
+	<% if(access >  1 || (access === 1 && billslist[i].order.u_id ===  user.id &&   billslist[i].status != "2")){ %>
+		<tr class="<% if(billslist[i].status === "2"){%>gradeX<%} else if(billslist[i].status === "1"){%>gradeU<%}else if(billslist[i].accept === "1"){%>gradeA<%}else{%>gradeB<%}%>">
+			<td><a href="/buh/view/bill/<%= billslist[i].bill_id %>"><%= billslist[i].bill_id %></a></td>
+			<td><a href="/customers/view/main/<%= billslist[i].order.c_id %>"><%= billslist[i].order.c_name %></a></td>
+			<td><%= billslist[i].formatdate  %></td>
+			<td><%= billslist[i].formatsum %></td>
+			<td><%= (billslist[i].sum-billslist[i].res_sum).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %></td>
+			<td><%if(billslist[i].inbank.length!=0){%>
+			<%for (var g = 0; g < billslist[i].inbank.length; g++) {%>
+			п/п: <a href="/buh/view/inbank/<%= billslist[i].inbank[g].ib_id %>"><%= billslist[i].inbank[g].ib_id %></a> - сумма: <%= (billslist[i].inbank[g].sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> ; 
+			<% }%>
+			<strong>Итого: <%= (billslist[i].res_sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %></strong>
+			<% } else {%> - <%}%>
+			</td>
+			<td><% if(billslist[i].status === "2"){%>аннулирован<%}else if(billslist[i].status === "1"){%> закрыт <%}else{%>счет открытый<%}%></td>
+			<td><% if(billslist[i].accept === "1"){%>подписан<%}else{%>не подписан<%}%></td>
+			<td><%= billslist[i].order.fio %></td>
+		</tr>
+		<% }}%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Менеджер</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	</div>
+	<%  if(access >  1.5){%>
+	<h1>Загрузка входящих п/п:<img id="pp" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="pp_div">
+	<FORM ENCTYPE="multipart/form-data" ACTION="buh/upload" METHOD=POST>
+	<INPUT TYPE="hidden" name="MAX_FILE_SIZE" value="1000000"><!-- макс. размер -->
+	Имя файла: <INPUT NAME="userfile" TYPE="file"><INPUT TYPE="submit" VALUE="Отправить">
+	</FORM>
+	</div>
+	<% }%>
+	<h1>Поиск п/п за период:<img id="list_inbank_date" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="list_inbank_date_div">
+	<form method="post" name='dateform' id="inbank" action="/">
+	От <input name="date" id="datepicker3" type="text" size="15"> 
+	до <input name="date" id="datepicker4" type="text" size="15"><br>
+	клиент <select name="c_id">
+		<option value="0">по всем клиентам </option>
+		<%for (var i = 0; i < list_customers.length; i++) {%>
+			<%if(list_customers[i].u_id === user.id || access >  1){%><option value="<%= list_customers[i].c_id %>"><%= list_customers[i].formatname  %> </option>
+			<% }} %>
+		</select><br><button type="subbutton" id="sub">Найти</button>
+	</form>
+	</div>
+	<h1>Список непривязанных п/п:<img id="list_inbank" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="list_inbank_div">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_pp">
+	<thead>
+		<tr>
+			<th width="20px">№</th>
+			<th width="30px">№ б/к</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Кому</th>
+			<th width="140px">Сумма</th>
+			<th>Назначение</th>
+			<th>Менеджер</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%if(inbank_list)%>
+	<%for (var i = 0; i < inbank_list.length; i++) {%>
+	<% if(access >  1 || (access === 1 && inbank_list[i].customer.u_id ===  user.id)){ %>
+		<tr class=<% if(inbank_list[i].customer.u_id ===  user.id){ %>"gradeA"<%}else {%>"gradeB"<%}%>>
+			<td><a href="/buh/view/inbank/<%= inbank_list[i].ib_id %>"><%= inbank_list[i].ib_id %></a></td>
+			<td><%= inbank_list[i].no %></td>
+			<td><a href="/customers/view/main/<%= inbank_list[i].c_id %>"><%= inbank_list[i].customer.c_name %></td>
+			<td><%= inbank_list[i].formatdate  %></td>
+			<td><%= inbank_list[i].namecomp %></td>
+			<td><%= inbank_list[i].formatsum %></td>
+			<td><%= inbank_list[i].pop %></td>
+			<td><%= inbank_list[i].customer.fio %></td>
+		</tr>
+		<% }}%>
+	<tfoot>
+		<tr>
+			<th width="20px">№</th>
+			<th width="30px">№ б/к</th>
+			<th>Компания</th>
+			<th>Дата</th>
+			<th>Кому</th>
+			<th>Сумма</th>
+			<th>Назначение</th>
+			<th>Менеджер</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	</div>

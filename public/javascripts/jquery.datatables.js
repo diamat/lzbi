@@ -646,9 +646,12 @@
 		 */
 		"date-asc": function ( a, b )
 		{
-			var x = Date.parse( a );
-			var y = Date.parse( b );
-			
+			a = a.trim();
+			b = b.trim();
+			var g = a.substring(3,6)+a.substring(0,3)+a.substring(6);
+			var z = b.substring(3,6)+b.substring(0,3)+b.substring(6);
+			var x = Date.parse( g );
+			var y = Date.parse( z );
 			if ( isNaN(x) || x==="" )
 			{
 			x = Date.parse( "01/01/1970 00:00:00" );
@@ -663,8 +666,12 @@
 		
 		"date-desc": function ( a, b )
 		{
-			var x = Date.parse( a );
-			var y = Date.parse( b );
+			a = a.trim();
+			b = b.trim();
+			var g = a.substring(3,6)+a.substring(0,3)+a.substring(6);
+			var z = b.substring(3,6)+b.substring(0,3)+b.substring(6);
+			var x = Date.parse( g );
+			var y = Date.parse( z );
 			
 			if ( isNaN(x) || x==="" )
 			{

@@ -1,0 +1,133 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Счет № <%= bill.bill_id%> от <%=  bill.formatDateMonth%></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+<!--
+.style1 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+}
+.line {            background:url(line.png) top left repeat-x; height:2px; width:100%;
+            border: 1px solid black;
+            background: black;
+            margin-top: -17px;
+            margin-bottom: 20px;
+}
+.tblProduct {            border: 2px solid black;
+}
+.style11 {font-size: 14; font-family: "Times New Roman", Times, serif; }
+.style12 {font-size: 14px}
+.line1 {background:black top left repeat-x; height:2px; width:100%;
+            border: 1px solid black;
+            background: black;
+            margin-top: -17px;
+            margin-bottom: 20px;
+}
+-->
+</style>
+</head>
+
+<body>
+<br>
+<table width="708"  border="0" cellpadding="4" cellspacing="3">
+  <tr>
+    <td align="center"><p class="style1">Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате обязательно, в противном случае не гарантируется наличие товара на складе. Товар отпускается по факту прихода денег на р/с Поставщика, самовывозом, при наличии доверенности и паспорта.&nbsp;<br>Счет действителен в течение 3-х дней.</p></td>
+  </tr>
+  <tr>
+    <td><table cellspacing="0" style="margin-top: -15px;width: 100%;">
+      <tbody>
+        <tr class="style1">
+          <td style="border:2px solid black">ИНН 
+
+
+<%= mycomp.inn%></td>
+          <td style="border-top:2px solid black;border-bottom:2px solid black">КПП 
+
+
+<%= mycomp.kpp%></td>
+          <td style="border:2px solid black;" rowspan="2" valign="bottom">Сч. №</td>
+          <td valign="bottom" style="border-top:2px solid black;border-bottom:2px solid black;border-right:2px solid black" rowspan="2"> <%= mycomp.rs%> </td>
+        </tr>
+        <tr class="style1">
+          <td style="border-left:2px solid black;border-bottom:2px solid black" colspan="2">Получатель<br>
+           <%= mycomp.name%></td>
+        </tr>
+        <tr class="style1">
+          <td style="border-left:2px solid black;border-bottom:2px solid black" colspan="2" rowspan="2"> Банк получателя<br>
+            <span class="style1"><%= mycomp.namebank%></span></td>
+          <td style="border-left:2px solid black;border-bottom:2px solid black;border-right:2px solid black">БИК</td>
+          <td style="border-right:2px solid black"> <%= mycomp.bik%> </td>
+        </tr>
+        <tr>
+          <td valign="top" class="style1" style="border-bottom:2px solid black;border-right:2px solid black;border-left:2px solid black">Сч. №</td>
+          <td class="style1" style="border-bottom:2px solid black;border-right:2px solid black;"> <%= mycomp.ks%> </td>
+        </tr>
+      </tbody>
+    </table></td>
+  </tr>
+  <tr>
+    <td><h2 align="left" style="">Счет № <%= bill.bill_id%> от <%=  bill.formatDateMonth%></h2>
+      <div class="line"></div>
+      <div class="nameProvider">
+        <p class="style1"><b>Поставщик:&nbsp;<%= mycomp.name%>, ИНН <%= mycomp.inn%>, КПП <%= mycomp.kpp%>, <%= mycomp.index%>, <%= mycomp.address%>, тел.: <%= mycomp.phone%></b></p>
+      </div>
+    <div class="nameProvider"><p class="style1"><b>Покупатель: <%= bill.order.c_name%>, ИНН <%= bill.order.inn%>, <%if (uaddress){%><%= uaddress.index %>, <%= uaddress.city %>, <%= uaddress.street %>, д. <%= uaddress.house %> <%if ( uaddress.office){%>, оф. <%= uaddress.office %> <%}}%><%if (bill.order.phone){%>, тел.: <%= bill.order.phone %><%}%></b></p></div></td>
+  </tr>
+  <tr>
+    <td height="106"><div class="nameBuyer" style="font-weight: 600;"></div>      
+      <table cellspacing="0" style="margin:0 auto; margin-top:15px; width:100%;" class="tblProduct">
+        <tbody>
+          <tr>
+            <th width="4%" style="border-right:1px solid black;"> № </th>
+            <th width="56%" style="border-right:1px solid black;"> Товары (работы, услуги) </th>
+            <th width="10%" style="border-right:1px solid black;"> Кол-во </th>
+            <th width="7%" style="border-right:1px solid black;"> Ед. </th>
+            <th width="10%" style="border-right:1px solid black;"> Цена </th>
+            <th width="13%" style="border-right:1px solid black;"> Сумма </th>
+          </tr>
+		<%for (var i = 0; i < listprod.length; i++) { var g = i+1;%>
+		<tr class="style1">
+            <td align="center" style="border-right:1px solid black;border-top:1px solid black;"><%= g %></td>
+            <td style="border-right:1px solid black;border-top:1px solid black;"><%= listprod[i].prodname  %> <%= listprod[i].addname  %></td>
+            <td align="center" style="border-right:1px solid black;border-top:1px solid black;"><%= listprod[i].bill.number %></td>
+            <td align="center" style="border-right:1px solid black;border-top:1px solid black;"><%= listprod[i].unitname %></td>
+            <td align="center" style="border-right:1px solid black;border-top:1px solid black;"><%= listprod[i].bill.formatprice %> </td>
+            <td align="center" style="border-right:1px solid black;border-top:1px solid black;"><%= listprod[i].bill.sum %></td>
+          </tr>
+		  <% }%>
+        </tbody>
+    </table>
+      <table width="100%" cellpadding="2" cellspacing="3" style="font-weight: 600;">
+        <tbody>
+          <tr class="style12">
+            <td width="86%" align="right"><span class="style11">Итого:</span></td>
+            <td width="14%" align="right"><span class="style11"><%= bill.formatsum%></span></td>
+          </tr>
+          <tr class="style12">
+            <td align="right" width="86%"><span class="style11">В том числе НДС:</span></td>
+            <td width="14%" align="right"><span class="style11"><%= bill.nds%></span></td>
+          </tr>
+        </tbody>
+      </table>
+    <p class="style1">Всего наименований <%= listprod.length  %>, на сумму <%= bill.formatsum%> руб.<br>
+      <strong class="style12">Итого к оплате: <%= bill.prop%> руб. <%= bill.sum.substr(bill.sum.length-2)%> коп.</strong></p>
+<br>
+    <div class="line1"></div>    
+	<table width="100%" cellpadding="2" cellspacing="3" style="font-weight: 600;">
+      <tbody>
+        <tr class="style12">
+          <td width="50%" align="left"><span class="style11">Руководитель _____________</span><span class="style1">(<%= mycomp.gendir%>)</span></td>
+          <td width="50%" align="left">Бухгалтер ______________<span class="style1">(<%= mycomp.gendir%>)</span></td>
+        </tr>
+      </tbody>
+    </table>
+	</td>
+  </tr>
+</table>
+ <% if(mycomp.inn === "7816533550"){%><img style="width:160px; height:160px; position:relative; left:50px; bottom:50px;" src="/images/print-lzbi.gif"><%}%>
+ <% if(mycomp.inn === "7810877258"){%><img style="width:160px; height:160px; position:relative; left:50px; bottom:50px;" src="/images/print-rubikon.gif"><%}%>
+</body>
+</html>

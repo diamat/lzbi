@@ -1,4 +1,6 @@
 var sessionsave = require('../lib/sessionsave');
+var routes = require('../controllers/app');
+var controllerLogin = require('../controllers/login');
 // Routers setting
 
 function Restrict (req, res, next) {
@@ -6,9 +8,10 @@ function Restrict (req, res, next) {
 	var user = {};
 	user.hash = req.session.user.hash;
 	user.username = req.session.user.username;
+	req.session.lastAccess = Date.now ();
 	user.lastaccess = req.session.lastAccess;
 	var newsocketio = new sessionsave();
-	newsocketio.SessionSave(user);
+	newsocketio.sessionSave(user);
 	newsocketio.on('SessionSave_Ok', function(){ next();});
 	newsocketio.on('SessionSaveError_Ok', function() { res.render ('error/500.html');});
   } else {
@@ -18,48 +21,20 @@ function Restrict (req, res, next) {
 }
 
 
-exports.scriptRouting = function scriptRouting (app, prefix, action , script , fn){
-switch(script){
-	  case 'standart':
-			switch(action) {
-			  case 'index':
-				app.get(prefix, Restrict, fn);
-				break;
-			  case 'menu':
-				app.get(prefix + '/:menu', Restrict, fn);
-				break;
-			  case 'id':
-				app.get(prefix + '/:menu/view/:form/:id', Restrict, fn);
-				break;
-			  case 'edit':
-				app.get(prefix + '/:menu/edit/:form/:id', Restrict,  fn);
-				break;
-			  /*case 'menu':
-				app.get(prefix + '/:menu', Restrict, fn);
-				break;
-			  case 'edit':
-				app.get(prefix + '/:id/edit', fn);
-				break;
-			  case 'update':
-				app.put(prefix + '/:id', fn);
-				break;
-			  case 'destroy':
-				app.del(prefix + '/:id', fn);
-				break;*/
-			};
-		break;
-	  case 'login':
-		    switch(action) {
-			  case 'index':
-				app.get(prefix, fn);
-				break;
-			  case 'login':
-				app.post(prefix, fn);
-				break;
-			  case 'logout':
-				app.get(prefix+ '/logout', fn);
-				break;
-			};
-		break;
-	}
+exports.bootRouters = function (app) {
+	//Login
+	app.post('/login', controllerLogin.login);
+	app.get('/login',  controllerLogin.index);
+	app.get('/login/logout', controllerLogin.logout);
+	
+	//Остальное
+	app.post('/:menu/upload', Restrict, routes.upload);
+	//app.post('/:menu/period/:form/:date1/:date1', Restrict, routes.period);
+	app.get('/', Restrict, routes.index);
+	app.get('/:menu', Restrict, routes.menu);
+	app.get('/:menu/view/:form/:id', Restrict, routes.id);
+	app.get('/:menu/new/:form/:id/:id2', Restrict, routes.id);
+	app.get('/:menu/edit/:form/:id', Restrict, routes.edit);
+	app.get('/:menu/print/:form/:id', Restrict, routes.print);
+	app.get('/:menu/date/:form/:date1/:date2/:id', Restrict, routes.date);
 }

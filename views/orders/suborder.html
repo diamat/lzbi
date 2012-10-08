@@ -1,22 +1,128 @@
-	<script type="text/javascript">
-	$(document).ready(function() {	
-			
-			$("#list_suborders_prod").dataTable({
-					"sPaginationType": "full_numbers",
-					"aoColumns": [
-									{ "sType": "numeric-url", "sClass": "center"},
-									{ "sClass": "center" },
-									{ "sClass": "center" },
-									{ "sClass": "center" },
-									{ "sClass": "center" },
-									<%  if(access ==  1){%>{ "sClass": "center" },<%}%>
-									{ "sClass": "center" }
-								]
+	<% this.extend("layout"); %>
+	 <style type="text/css">
+		#table-bill {
+		  margin:20px;
+		  margin-left:0px;
+		  font-size: 10pt;
+		  border-collapse:collapse;
+		}
+		#table-bill tr {
+		  border-bottom:1px dotted #69A260;
+		}
+		#table-bill td {
+		  padding:2 10px 2 10px;
+		}
+		.dragRow {
+		  background-color:#FFC310;
+		}
+		.normalRow {
+		  background-color:#E2F2E2;
+		}
+	</style>
+	<script type="text/javascript">		
+	$(document).ready(function() {			
+			$("input[name='date']").mask("99.99.9999");
+			$("#table-bill").tableDnD();
+
+				
+			$("#list_suborders").dataTable({
+				"sPaginationType": "full_numbers",
+				"aoColumns": [
+								{ "sType": "numeric-url", "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" }
+							],
+				"fnFooterCallback": function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+						/*
+						 * Calculate the total market share for all browsers in this table (ie inc. outside
+						 * the pagination)
+						 */
+						var iTotalMarket = 0;
+						for ( var i=0 ; i<aaData.length ; i++ )
+						{
+							var buff = aaData[i][5];
+							buff = parseFloat((buff+'').replace(/\s/g, ''));
+							iTotalMarket += buff;
+						}
+						
+						/* Calculate the market share for browsers on this page */
+						var iPageMarket = 0;
+						for ( var i=iStart ; i<iEnd ; i++ )
+						{
+							var buff = aaData[ aiDisplay[i] ][5];
+							buff = parseFloat((buff+'').replace(/\s/g, ''));
+							iPageMarket += buff;
+						}
+						
+						/* Modify the footer row to match what we want */
+						var nCells = nRow.getElementsByTagName('th');
+						nCells[5].innerHTML =parseFloat(iPageMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+					}
 			});
-					
-		<%  if(access ==  1){%>
-			$('form').validate({
-				submitHandler: function() {
+			
+			$("#list_bills").dataTable({
+				"sPaginationType": "full_numbers",
+				"aaSorting": [[ 0, "desc" ]],
+				"aoColumns": [
+								{ "sType": "numeric-url", "sClass": "center" },
+								{ "sType": "date", "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" }
+							],
+				"fnFooterCallback": function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+						/*
+						 * Calculate the total market share for all browsers in this table (ie inc. outside
+						 * the pagination)
+						 */
+						var iTotalMarket = 0;
+						var iTotalMarket2 = 0;
+						for ( var i=0 ; i<aaData.length ; i++ )
+						{
+							if((aaData[i][5]).toString()!='аннулирован'){
+								var buff = aaData[i][2];
+								buff = parseFloat((buff+'').replace(/\s/g, ''));
+								iTotalMarket += buff;
+								var buff2 = aaData[i][3];
+								buff2 = parseFloat((buff2+'').replace(/\s/g, ''));
+								iTotalMarket2 += buff2;
+							}
+						}
+						
+						/* Calculate the market share for browsers on this page */
+						var iPageMarket = 0;
+						var iPageMarket2 = 0;
+						for ( var i=iStart ; i<iEnd ; i++ )
+						{
+							if((aaData[ aiDisplay[i] ][5]).toString()!='аннулирован'){
+								var buff = aaData[ aiDisplay[i] ][2];
+								buff = parseFloat((buff+'').replace(/\s/g, ''));
+								iPageMarket += buff;
+								var buff2 = aaData[ aiDisplay[i] ][3];
+								buff2 = parseFloat((buff2+'').replace(/\s/g, ''));
+								iPageMarket2 += buff2;
+							}
+						}
+						
+						/* Modify the footer row to match what we want */
+						var nCells = nRow.getElementsByTagName('th');
+						nCells[2].innerHTML =parseFloat(iPageMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+						nCells[3].innerHTML =parseFloat(iPageMarket2).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +
+							' <br>(из '+ parseFloat(iTotalMarket2).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") +')';
+					}
+			});
+		
+		<%  if(access >  0 && access !=  1.5){%>		
+			$('#suborderprod').validate({
+				 submitHandler: function() {
 					flag_valid = true;
 				}
 			});
@@ -28,12 +134,13 @@
 			});
 					
 			$("input[name='no_save']").click(function(){
-						buff_msg = 'not';
-						$('#'+name_form+' *').attr("disabled", false);
-						$('#pbdiv').hide();
+				buff_msg = 'not';
+				$('#'+name_form+' *').attr("disabled", false);
+				$('#bill *').attr("disabled", false);
+				$('#pbdiv').hide();
 			});
-					
-			$('form').submit(function(){
+			
+			$('#suborderprod').submit(function(){
 				if(flag_valid === true){
 					name_form = $(this).attr('id');
 					flag_valid = false;
@@ -42,13 +149,36 @@
 					$('#'+name_form+' *').attr("disabled", true);
 					$('#status').text('Подключение к серверу.').css('color','#333');
 					$('#progressbar').progressbar({ value: 0 });
-					buff_msg = 'new_suborders_prod';
-					var buff_obj = {name:'SUBORDER_ID', value : '<%= order.ID %>'};
+					buff_msg = 'new';
+					var buff_obj = {name:'subo_id', value : '<%= data.subo_id %>'};
 					array_table[array_table.length] = buff_obj;
 					buff_arr = array_table;
-					socket.emit(buff_msg, name_form, id, array_table);
+					socket.emit(buff_msg, name_form, array_table);
 				}
 				return false;
+			});
+			
+			$('#bill').submit(function(){
+					var array_table = $('#bill').serializeArray();
+					array_table[array_table.length] = {name:'subo_id', value : '<%= data.subo_id %>'};
+					array_table[array_table.length] = {name:'c_id', value : '<%= data.order.customer.c_id %>'};
+					<%  if(access >  1){%>array_table[array_table.length] = {name:'accept', value : '1'};<%}%>
+					$('#bill *').attr("disabled", true);
+					$('#pbdiv').show();
+					$('#status').text('Подключение к серверу.').css('color','#333');
+					$('#progressbar').progressbar({ value: 0 });
+					socket.emit('savebill',  array_table<%  if(access >  1){%>, 1<%}%>);
+					return false;
+			});
+			
+			$('#sum').click(function(){
+					var array_table = $('#bill').serializeArray();
+					$('#bill *').attr("disabled", true);
+					$('#pbdiv').show();
+					$('#status').text('Подключение к серверу.').css('color','#333');
+					$('#progressbar').progressbar({ value: 0 });
+					socket.emit('sumbill',  array_table);
+					return false;
 			});
 					
 			//socket
@@ -57,127 +187,232 @@
 				$('#status').text('Обработка данных на сервере.');
 				$('#progressbar').progressbar({ value: 35 });
 			});
-					
-					
-			socket.on('end_save', function (new_suborder) {
-				$('#status').text('Данные на сервере сохраненны.');
-				$('#progressbar').progressbar({ value: 70 });
-				$('#'+name_form+' *').attr("disabled", false);
-				$('#status').text('Добовление данных к таблице.');
-				$('#list_suborders_prod').dataTable().fnAddData( [
-					'<span class="warning"><a href="/<%= user.role %>/orders/edit/suborderprod/'+new_suborder.ID+'">'+new_suborder.SUBNO+'</a></span>',
-					'<span class="warning">'+new_suborder.NAME+' '+buff_arr[1].value+'</span>',
-					'<span class="warning">'+new_suborder.UNIT+'</span>',
-					'<span class="warning">сейчас</span>',
-					'<span class="warning">'+buff_arr[2].value+'</span>',
-					'<span class="warning">'+buff_arr[3].value+'</span>',
-					'<span class="warning">'+buff_arr[4].value+'</span>'
-				]);
-				$('#'+name_form)[0].reset();
-				$('#progressbar').progressbar({ value: 100 });
-				setTimeout(function() {
-					$('#pbdiv').hide();
-				}, 1000);
-			});
-				
-			socket.on('err_save', function (err) {
-				$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
-				setTimeout(function() {
-					$('#'+name_form+' *').attr("disabled", false);
+			
+			socket.on('err_bills', function (err) {
+			$('#status').text('Ошибка проверки: '+err).css('color','#FF0000');
+			setTimeout(function() {
+					$('#bill *').attr("disabled", false);
 					$('#pbdiv').hide();
 				}, 6000);
 			});
 			
-			$('#suborders_prod_div').hide();
-			<%}%>			
+			socket.on('end_sum_bills', function (id, arr, sum) {
+				$('#status').text('Данные на сервере проверенны.');
+				$('#progressbar').progressbar({ value: 70 });
+				$('#status').text('Обновление страницы.');
+				$('#progressbar').progressbar({ value: 100 });
+				for(var i=0;i<arr.length;i++)
+				$('#sum'+id[i]).html(arr[i]+' руб.');
+				$('#pricesum').html(sum+' руб.');
+				$('#bill *').attr("disabled", false);
+				$('#pbdiv').hide();
+			});
+				
+			socket.on('end_bill_save', function () {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				setTimeout(function() {
+					$('#status').text('Обновление страницы.');
+					$('#progressbar').progressbar({ value: 100 });
+					location.href='/<%= action2%>/view/suborder/<%= data.subo_id %>';
+				}, 100);
+			});
+			
+			socket.on('end_save', function (new_suborder) {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				setTimeout(function() {
+					$('#status').text('Обновление страницы.');
+					$('#progressbar').progressbar({ value: 100 });
+					location.href='/<%= action2%>/view/suborder/<%= data.subo_id %>';
+				}, 100);
+			});
+				
+			socket.on('err_save', function (err) {
+			$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+			setTimeout(function() {
+					$('#'+name_form+' *').attr("disabled", false);
+					$('#bill *').attr("disabled", false);
+					$('#pbdiv').hide();
+				}, 6000);
+			});
+			
+			$('#save_suborder_div').hide();
+			$('#datepicker').datepicker();	
+			$('#save_bill_div').hide();
+		<%}%>
+						
 	});
 	</script>
-	<%- partial('status') %>
-	<h1>Приложение №<%=order.SUBNO%></h1>
-	<strong>Договор №:</strong> <a href="/<%- user.role %>/orders/view/main/<%=order.ORDER_ID%>"><%=order.ORDER_ID%></a><br>
-	<strong>Заказчик:</strong> <a href="/<%- user.role %>/customers/view/main/<%= order.CUSTOMER_ID %>"><%= order.NAME_SOB %> &laquo;<%= order.CNAME %>&raquo;</a><br>
-	<strong>Название:</strong> <%= order.NAME %> <br>
-	<strong>Дата заключения:</strong> <%= order.SODATE %> <br>
-	<strong>Примечание:</strong> <%- order.NOTE %> </p>
-	<%  if(access ==  1){ %><p><a href="/<%- user.role %>/<%- action2%>/edit/suborder/<%- order.ID  %>">Редактировать</a></p>
-	<h1>Добавить пункт к приложению:<img id="suborders_prod" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
-	<div id="suborders_prod_div">
-	<form method="post" id="save_suborders_prod_form" action="/">
-	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
-	  <tr>
-		<td width="20%" align="right" align="right">Продукция/услуги:</td>
-		<td><select name="PRODUCT_ID">
-		<% products.forEach (function(product){ %>
-			<%if(product.ARCHIVE === 0){%><option value="<%= product.ID %>"><%= product.NAME %>&nbsp;(<%= product.UNIT %>) </option><%}%>
-			<% }) %>
+	<%@ status %>
+	<h1>Приложение №<%=data.sub_no%> к договору <a href="/orders/view/main/<%=data.o_id%>">№<%=data.o_id%> (<%=data.order.name%>)</a></h1>
+	<strong>Заказчик:</strong> <a href="/customers/view/main/<%= data.order.customer.c_id %>"><%= data.order.customer.name %></a> <strong>Менеджер:</strong> <%= data.order.customer.fio %><br>
+	<strong>Название приложения:</strong> <%= data.name %> <br>
+	<strong>Статус приложения:</strong> 
+			<%for (var i = 0; i < status.length; i++) {%>
+			<% if(data.status === status[i].id) { %> <%= status[i].name %><%}}%><br>
+	<strong>Номер заявки:</strong> <%= data.znubmer %> <br>
+	<strong>Дата заключения:</strong> <%= data.formatdate %> <br>
+	<strong>Примечание:</strong> <%= data.note %> <br>
+	<%  if(access > 0 && access !=  1.5){ %><a href="/<%= action2%>/edit/suborder/<%= data.subo_id  %>">Редактировать</a>
+	<%  if(billslist.length === 0 || access > 1){ %><h1>Добавить продукцию к приложению:<img id="save_suborder" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="save_suborder_div">
+	<form method="post" id="suborderprod" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">	 
+		<tr>
+		<td  width="20%" align="right">Товар/услуга из справочника:</td>
+		<td width="80%"><select name="prod_sid">
+		<%for (var i = 0; i < prodlist.length; i++) {%>
+			<option value="<%= prodlist[i].prod_sid %>"><%= prodlist[i].name  %> - <%= prodlist[i].unitname  %></option>
+			<% } %>
 		</select></td>
 	  </tr>
 	  <tr>
-		<td align="right">Приписка к названию прод./усл.:</td>
-		<td><input name="ADDNAME" type="text" size="40"></td>
+		<td align="right">Дополнение к названию:</td>
+		<td><input name="addname" type="text" size="25" autocomplete="off"></td>
 	  </tr>
 	  <tr>
-		<td align="right">Цена за ед.(руб.)*:</td>
-		<td><input name="PRICE" type="text" size="40" class="required number"></td>
+		<td align="right">Цена*:</td>
+		<td><input name="price" type="text" size="25" autocomplete="off" class="required"></td>
 	  </tr>
-	  <tr>
 		<td align="right">Кол-во*:</td>
-		<td><input name="NUMBER" type="text" size="40" class="required number"></td>
+		<td><input name="number" type="text" size="25" autocomplete="off" class="required"></td>
 	  </tr>
 	  <tr>
-		<td align="right">Откат за ед. (руб.):</td>
-		<td><input name="OTKAT" type="text" size="40" class="number"></td>
-	  </tr>
 		<td align="right"></td>
 		<td><button type="subbutton" id="sub">Сохранить</button></td>
 	  </tr>
 	</table>
 	</form>
 	</div>
-	<%}%>
-	<h1>Список продукции/услуг в приложение</h1>
-	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_suborders_prod">
+	<%}}%>
+	<h1>Список товаров и услуг</h1>
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_suborders">
 	<thead>
 		<tr>
 			<th width="30px">№</th>
 			<th>Название</th>
-			<th width="30px">Ед.</th>
-			<th>Дата редактирования</th>
+			<th>Ед. измерения</th>
 			<th>Цена</th>
 			<th>Кол-во</th>
-			<%  if(access ==  1){ %>
-			<th width="">Откат</th>
-			<%}%>
+			<th  width="200px">Сумма</th>
 		</tr>
 	</thead>
 	<tbody >
-		<% if(list_suborders_prod){%>
-		<% list_suborders_prod.forEach (function(suborders_prod){ %>
-		<tr class="odd gradeU" >
-			<td><a href="/<%= user.role %>/orders/edit/suborderprod/<%= suborders_prod.ID %>"><%= suborders_prod.SUBNO %></a></td>
-			<td><%= suborders_prod.NAME %>&nbsp;<%= suborders_prod.ADDNAME %></td>
-			<td><%= suborders_prod.UNIT %></td>
-			<td><%= suborders_prod.UDATE %></td>
-			<td><%  if(pr_redis[suborders_prod.ID]) {%><%=pr_redis[suborders_prod.ID][0] %><% }%></td>
-			<td><%  if(pr_redis[suborders_prod.ID]) {%><%=pr_redis[suborders_prod.ID][1] %><% }%></td>
-			<%  if(access ==  1){ %>
-			<td><%  if(pr_redis[suborders_prod.ID]) {%><%=pr_redis[suborders_prod.ID][2] %><% }%></td>
-			<%}%>
-		</tr>
-		<% })}%>
+	<%if(list)%>
+	<%for (var i = 0; i < list.length; i++) { var g = i+1;%>
+		<tr class="gradeB">
+			<td><%  if(billslist.length === 0 || access > 1){ %><a href="/orders/edit/suborderprod/<%= list[i].prod_id %>"><%= g %></a><%} else {%><%= g %><%}%></td>
+			<td><%= list[i].prodname %> <%= list[i].addname %></td>
+			<td><%= list[i].unitname  %></td>
+			<td><%= list[i].price %></td>
+			<td><%= list[i].number %></td>
+			<td><%= list[i].formatsum %></td>
+			</tr>
+		<% }%>
 	<tfoot>
 		<tr>
 			<th width="30px">№</th>
 			<th>Название</th>
-			<th>Ед.</th>
-			<th>Дата редактирования</th>
+			<th>Ед. измерения</th>
 			<th>Цена</th>
 			<th>Кол-во</th>
-			<%  if(access ==  1){ %>
-			<th width="">Откат</th>
-			<%}%>
+			<th>Сумма</th>
 		</tr>
 	</tfoot>
 	</tbody>
 	</table>
-	
+	<%  if(access >  0 && access !=  1.5){ %>
+	<%if(list){%>
+	<%if(list.length != 0){%>
+	<h1>Выставить счет:<img id="save_bill" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="save_bill_div">
+	<form method="post" id="bill" action="/"> 
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">	 
+	<tr>
+		<td width="25%" align="right"><b>Дата выставления счета:</b></td>
+		<td width="250px"><input name="date" id="datepicker" type="text" size="20"></td>
+		<td  width="200px" align="right"><b>Счет от компании:</b></td>
+		<td><select name="id_comp">
+			<option value="0">ЛЗБИ</option>
+			<option value="1">Рубикон</option>
+		</select></td>
+	  </tr>
+	 </table>
+	<table id="table-bill" width="100%">	
+	<%for (var i = 0; i < list.length; i++) {%>
+		<tr>
+			<td width="25%" align="right"><b><%= list[i].prodname %> <%= list[i].addname %></b></td>
+			<td width="250px"> цена: <input name="price<%= list[i].prod_id %>" type="text" size="5" autocomplete="off" value="<%= list[i].pricefl %>"> (<%= list[i].price %> руб.)</td>
+			<td width="270px" align="left"> кол-во: <input name="number<%= list[i].prod_id %>" type="text" size="4" autocomplete="off" value="0">  (<%= list[i].number %> <%= list[i].unitname  %>)</td>
+			<td align="left"><span id="sum<%= list[i].prod_id %>">0 руб.</span></td>
+	   </tr>
+		<% }%>
+	</table>
+	<table width="100%" border="0" cellpadding="4" cellspacing="4">
+	 <tr>
+		<td align="right"><b>Примечание:</b></td>
+		<td width="250px"><textarea name="note" cols="30" rows="3"></textarea></td>
+		<td  width="200px" align="right"><strong>Итого:</strong></td>
+		<td><p id="pricesum">0 руб.</p></td>
+	  </tr>
+	  <tr>
+		<td width="25%"align="right">&nbsp;</td>
+		<td width="250px"><button type="button" id="sum">Посчитать</button><button type="subbutton" id="sub">Сохранить</button></td>
+		<td width="200px">&nbsp;</td>
+		<td>&nbsp;</td>
+	  </tr>
+	 </table>
+	</form>
+	</div>
+	<%}}}%>
+	<h1>Список счетов по данному приложению:<img id="list_bill" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="list_bill_div">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_bills">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата</th>
+			<th width="140px">Сумма</th>
+			<th width="140px">Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Счет от компании</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%if(billslist.length != 0)%>
+	<%for (var i = 0; i < billslist.length; i++) { %>
+		<%if(billslist[i].status != "2"){%>
+		<tr class="<% if(billslist[i].status === "2"){%>gradeX<%} else if(billslist[i].status === "1"){%>gradeU<%}else if(billslist[i].accept === "1"){%>gradeA<%}else{%>gradeB<%}%>">
+			<td><a href="/buh/view/bill/<%= billslist[i].bill_id %>"><%= billslist[i].bill_id %></a></td>
+			<td><%= billslist[i].formatdate  %></td>
+			<td><%= billslist[i].formatsum %></td>
+			<td><%= (billslist[i].sum-billslist[i].res_sum).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %></td>
+			<td><%if(billslist[i].inbank.length!=0){%>
+			<%for (var g = 0; g < billslist[i].inbank.length; g++) {%>
+			п/п: <a href="/buh/view/inbank/<%= billslist[i].inbank[g].ib_id %>"><%= billslist[i].inbank[g].ib_id %></a> - сумма: <%= (billslist[i].inbank[g].sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.; 
+			<% }%>
+			<strong>Итого: <%= (billslist[i].res_sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.</strong>
+			<% } else {%> - <%}%>
+			</td>
+			<td><% if(billslist[i].status === "2"){%>аннулирован<%}else if(billslist[i].status === "1"){%> закрыт <%}else{%>счет открытый<%}%></td>
+			<td><% if(billslist[i].accept === "1"){%>подписан<%}else{%>не подписан<%}%></td>
+			<td><%= billslist[i].namecomp %></td>
+		</tr>
+		<% }}%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Статус</th>
+			<th>Подпись</th>
+			<th>Счет от компании</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>

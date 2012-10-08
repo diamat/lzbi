@@ -1,0 +1,101 @@
+	<% this.extend('layout'); %>
+	<script type="text/javascript">
+	$(document).ready(function() {	
+					
+					
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+					
+					$("#save").validate({
+					   submitHandler: function() {
+						flag_valid = true;
+					   }
+					});
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#save *').attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+					
+					$('#save').submit(function(){
+							if(flag_valid === true){
+								flag_valid = false;
+								$('#pbdiv').show();
+								var array_table = $('#save').serializeArray();
+								$('#save *').attr("disabled", true);
+								$('#status').text('Подключение к серверу.').css('color','#333');
+								$('#progressbar').progressbar({ value: 0 });
+								buff_msg = 'update';
+								buff_arr = array_table;
+								socket.emit(buff_msg, <%= prod.prod_sid %>,  array_table);
+							}
+							return false;
+					});
+					
+					
+										
+					socket.on('start_save', function () {
+					buff_msg = 'not';
+					$('#status').text('Обработка данных на сервере.');
+					$('#progressbar').progressbar({ value: 35 });
+						});
+									
+					socket.on('end_save', function () {
+							$('#status').text('Данные на сервере сохраненны.');
+							$('#progressbar').progressbar({ value: 70 });
+							$('#save *').attr("disabled", false);
+							$('#status').text('Переход на страницу пользователь.');
+							$('#save')[0].reset();
+							$('#progressbar').progressbar({ value: 100 });
+							setTimeout(function() {
+								location.href='/spravprod';
+								
+							}, 1000);
+						});
+					
+					socket.on('err_save', function (err) {
+						$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+						setTimeout(function() {
+								$('#save *').attr("disabled", false);
+								$('#pbdiv').hide();
+							}, 4000);
+					});
+					
+			});
+	</script>
+	<%@ status %>
+	<h1>Редактировать товар</h1>
+	<form method="post" id="save" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	  <tr>
+		<td align="right">Группа товара:</td>
+		<td><select name="group">
+			<%for (var i = 0; i < group.length; i++) {%>
+			<option value="<%= group[i].id %>" <% if(prod.group === group[i].id) { %> selected<%}%>><%= group[i].name %></option>
+			<% } %>
+		</select>
+		</td>
+	  </tr>
+	  <tr>
+		<td width="10%" align="right">Название*:</td>
+		<td width="90%"><input name="name" type="text" size="40" value="<%= prod.name %>" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Еденицы измерения:</td>
+		<td><select name="unit" >
+			<%for (var i = 0; i < unit.length; i++) {%>
+			<option value="<%=unit[i].id %>" <% if(prod.unit === unit[i].id) { %> selected<%}%>><%= unit[i].name %></option>
+			<% } %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>
+	</form>

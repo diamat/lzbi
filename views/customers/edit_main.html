@@ -1,8 +1,25 @@
+	<% this.extend("layout"); %>
 	<script type="text/javascript">
+	var flaginn = <% if(dataedit.inn.length === 10){%>0<%}else{%>1<%}%>;
+	function maskINN() 
+				{ 
+					var inn = $("input[name='inn']").val();
+					if(flaginn === 0){
+						$("input[name='inn']").mask("999999999999");
+						if(inn)$("input[name='inn']").val(inn+'00');
+						$('#inntext').text('-2 цифры = 10 (ООО, ЗАО, ОАО и т.д.)');
+						flaginn = 1;
+					} else {
+						$("input[name='inn']").mask("9999999999");
+						if(inn)$("input[name='inn']").val(inn.substring(0,10));
+						$('#inntext').text('+2 цифры = 12 (для ИП)');
+						flaginn = 0;
+					}
+				} 
 	$(document).ready(function() {	
 					
-					
-					$("input[name='inn']").mask("9999999999");
+					<% if(dataedit.inn.length === 10){%>0<%}else{%>1<%}%>
+					$("input[name='inn']").mask("<% if(dataedit.inn.length === 10){%>9999999999<%}else{%>999999999999<%}%>");
 					$("input[name='kpp']").mask("999999999");
 					$("input[name='ogrn']").mask("9999999999999");
 					$("input[name='okpo']").mask("99999999");
@@ -27,42 +44,13 @@
 						buff_msg = 'not';
 						$('#save *').attr("disabled", false);
 						$('#pbdiv').hide();
-						var sel = $("select[name='forma_sob'] :selected").val();
-								if(sel == 0) {
-									$("input[name='inn']").attr("disabled", true);
-									$("input[name='inn']").attr("value", "1111111111");
-									$("select[name='type']").attr("disabled", true);
-									$("input[name='kpp']").attr("disabled", true);
-									$("input[name='ogrn']").attr("disabled", true);
-									$("input[name='okpo']").attr("disabled", true);
-									$("input[name='www']").attr("disabled", true);
-								}
 					});
 					
-					$("select[name='forma_sob']").change(function(){
-						var sel = $("select[name='forma_sob'] :selected").val();
-						if(sel == 0) {
-							$("input[name='inn']").attr("disabled", true);
-							$("select[name='type']").attr("disabled", true);
-							$("input[name='kpp']").attr("disabled", true);
-							$("input[name='ogrn']").attr("disabled", true);
-							$("input[name='okpo']").attr("disabled", true);
-							$("input[name='www']").attr("disabled", true);
-						}
-						else {
-							$("input[name='inn']").attr("disabled", false);
-							$("select[name='type']").attr("disabled", false);
-							$("input[name='kpp']").attr("disabled", false);
-							$("input[name='ogrn']").attr("disabled", false);
-							$("input[name='okpo']").attr("disabled", false);
-							$("input[name='www']").attr("disabled", false);
-						}
-					});
 					
 					$('#save').submit(function(){
 							if(flag_valid === true){
 								flag_valid = false;
-								socket.emit('simile_save', 'customers/edit/main/<%= dataedit.ID %>', <%= dateopen %>);
+								socket.emit('simile_save', 'customers/edit/main/<%= dataedit.c_id %>', <%= dateopen %>);
 							}
 							return false;
 					});
@@ -71,24 +59,18 @@
 						if(msg === 'ok'){
 							flag_valid = false;
 							$('#pbdiv').show();
-							var sel = $("select[name='forma_sob'] :selected").val();
-								if(sel == 0) {
-									$("input[name='inn']").attr("disabled", false);
-									$("input[name='inn']").attr("value", "1111111111");
-									$("select[name='type']").attr("disabled", false);
-									$("input[name='kpp']").attr("disabled", false);
-									$("input[name='ogrn']").attr("disabled", false);
-									$("input[name='okpo']").attr("disabled", false);
-									$("input[name='www']").attr("disabled", false);
-								}
 							var array_table = $('#save').serializeArray();
 							$('#save *').attr("disabled", true);
 							$('#status').text('Подключение к серверу.').css('color','#333');
 							$('#progressbar').progressbar({ value: 0 });
 							buff_msg = 'update_main_customer';
+							<% if(!listmanager) { %>
+							var buff_obj = {name:'u_id', value : '<%= dataedit.u_id %>'};
+							array_table[array_table.length] = buff_obj;
+							<%}%>
 							buff_arr = array_table;
-							id = <%= dataedit.ID %>;
-							socket.emit(buff_msg, name_form, <%= dataedit.ID %>, array_table);
+							id = <%= dataedit.c_id %>;
+							socket.emit(buff_msg, name_form, <%= dataedit.c_id %>, array_table);
 						} else {
 							$('#pbdiv').show();
 							$('#status').text('Отказ в сохранение, т.к. данный документ уже был отредактирован другим пользователем, обновите страницу (F5).').css('color','#FF0000');
@@ -96,7 +78,7 @@
 					});
 					
 					$('#back').click(function(){
-						location.href='/<%= user.role %>/customers/view/main/<%= dataedit.ID %>';
+						location.href='/customers/view/main/<%= dataedit.c_id %>';
 					});
 					
 					
@@ -113,7 +95,7 @@
 						setTimeout(function() {
 							$('#status').text('Переход на страницу данных контр агента.');
 							$('#progressbar').progressbar({ value: 100 });
-							location.href='/<%= user.role %>/customers/view/main/<%= dataedit.ID %>';
+							location.href='/customers/view/main/<%= dataedit.c_id %>';
 						}, 100);
 					});
 				
@@ -134,86 +116,66 @@
 								}
 						}, 6000);
 					});
-					
-					$('#help_div').hide();
-					<% if(dataedit.FORMA_SOB === 0) {%>
-							$("select[name='type']").attr("disabled", true);
-							$("input[name='kpp']").attr("disabled", true);
-							$("input[name='ogrn']").attr("disabled", true);
-							$("input[name='okpo']").attr("disabled", true);
-							$("input[name='www']").attr("disabled", true);
-					<%} %>
 						
 			});
 	</script>
-	<%- partial('status') %>
-	<%- partial('editstatus') %>
-	<h1>Подсказка <img id="help" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
-	<div id="help_div"><p>
-	<strong>Клиент</strong> — лицо, от которого Вы получаете денежные средства (показывается в поступлениях и первичных документах).<br>
-	<strong>Поставщик</strong> — лицо, которому Вы выплачиваете денежные средства (показывается в списаниях). <br>
-	<strong>Контрагент</strong>— лицо, одновременно являющееся и клиентом и партнером (показывается во всех списках в системе).<br>
-	</p>
-	</div>
+	<%@ status %>
+	<%@ editstatus %>
 	<h1>Редактирование контрагента</h1>
 	<div id="new_customer_div">
 	<form method="post" id="save" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	<% if(listmanager != null) { %>
+	<tr>
+		<td align="right"><span id="fs">Менеджер:</span></td>
+		<td><select name="u_id">
+			<%for (var i = 0; i < listmanager.length; i++) {%>
+			<option value="<%= listmanager[i].u_id %>" <% if(dataedit.u_id === listmanager[i].u_id) { %> selected<%}%>><%= listmanager[i].lastname %> <%= listmanager[i].name  %></option>
+			<% }%>
+		</select>
+		</td>
+	  </tr>
+	  <%}%>
 	  <tr>
 		<td align="right">Название:*</td>
-		<td><input name="name" type="text" size="40" class="required" value="<%= dataedit.NAME %>"></td>
-	  </tr>
-	  <tr>
-		<td align="right"><span id="fs">Форма собствености:</span></td>
-		<td><select name="forma_sob">
-		<% forma_sob.forEach (function(forma_sob){ %>
-			<option value="<%= forma_sob.ID %>" <% if(dataedit.FORMA_SOB == forma_sob.ID) { %> selected<%}%>><%= forma_sob.NAME %> &nbsp;&nbsp;&nbsp;&nbsp;</option>
-			<% }) %>
-		</select></td>
+		<td><input name="name" type="text" size="40" autocomplete="off" class="required" value="<%= dataedit.name %>"></td>
 	  </tr>
 	  <tr>
 		<td width="20%" align="right">ИНН:*</td>
-		<td width="80%"><input name="inn" type="text" size="13" value="<%= dataedit.INN %>" <% if(dataedit.FORMA_SOB == 0) { %> disabled<%}%> class="required">&nbsp;&nbsp;<a href="http://www.kartoteka.ru/search/" target="_blank">Поиск в реестре</a></td>
-	  </tr>
-	  <tr>
-		<td align="right">Тип контрагента:</td>
-		<td><select name="type">
-			<option value="0" <% if(dataedit.TYPE === 0) { %> selected<%}%>>Клиент&nbsp;&nbsp;</option>
-			<option value="1" <% if(dataedit.TYPE === 1) { %> selected<%}%>>Поставщик&nbsp;&nbsp;</option>
-			<option value="2" <% if(dataedit.TYPE === 2) { %> selected<%}%> >Контрагент&nbsp;&nbsp;</option>
-		</select></td>
+		<td width="80%"><input name="inn" type="text" size="13" value="<%= dataedit.inn %>" class="required">&nbsp;&nbsp;<a href="http://www.kartoteka.ru/search/" target="_blank">Поиск в реестре</a>
+		<br><a href="javascript: maskINN();"><span id="inntext"><% if(dataedit.inn.length === 10){%>+2 цифры = 12 (для ИП)<%}else{%>-2 цифры = 10 (ООО, ЗАО, ОАО и т.д.)<%}%></span></a></td>
 	  </tr>
 	  <tr>
 		<td align="right">КПП:</td>
-		<td><input name="kpp" type="text" size="10" value="<%= dataedit.KPP %>"></td>
+		<td><input name="kpp" type="text" size="10" autocomplete="off" value="<%= dataedit.kpp %>"></td>
 	  </tr>
 	  <tr>
 		<td align="right">ОГРН:</td>
-		<td><input name="ogrn" type="text" size="20" value="<%= dataedit.OGRN %>"></td>
+		<td><input name="ogrn" type="text" size="20" autocomplete="off" value="<%= dataedit.ogrn %>"></td>
 	  </tr>
 	  <tr>
 		<td align="right">ОКПО:</td>
-		<td><input name="okpo" type="text" size="20" value="<%= dataedit.OKPO %>"></td>
+		<td><input name="okpo" type="text" size="20" autocomplete="off" value="<%= dataedit.okpo %>"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Телефон:</td>
-		<td><input  name="phones" type="text" SIZE="30" value="<%= dataedit.PHONES %>"></td>
+		<td><input  name="phones" type="text" SIZE="30" autocomplete="off" value="<%= dataedit.phones %>"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Факс :</td>
-		<td><input  name="fax" type="text" SIZE="30" value="<%= dataedit.FAX %>"></td>
+		<td><input  name="fax" type="text" SIZE="30" autocomplete="off" value="<%= dataedit.fax %>"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Сайт компании: http://</td>
-		<td><input  name="www" type="text" SIZE="30" value="<%= dataedit.WWW %>"></td>
+		<td><input  name="www" type="text" SIZE="30"  autocomplete="off" value="<%= dataedit.www %>"></td>
 	  </tr>
 	   <tr>
 		<td align="right">E-mail:</td>
-		<td><input name="email" type="text" SIZE="30" value="<%= dataedit.EMAIL %>" class="email"></td>
+		<td><input name="email" type="text" SIZE="30" autocomplete="off"  value="<%= dataedit.email %>" class="email"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Примечание:</td>
-		<td><textarea name="note" cols="60" rows="5"><%= dataedit.NOTE %></textarea>
+		<td><textarea name="note" cols="60" rows="5"><%= dataedit.note %></textarea>
 	  </tr>
 	  <tr>
 		<td align="right"></td>

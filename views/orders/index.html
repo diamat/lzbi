@@ -1,21 +1,21 @@
+	<% this.extend("layout"); %>
 	<script type="text/javascript">
 	$(document).ready(function() {	
-			
-			$("input[name='DATE']").mask("99.99.9999");
+
+			$("input[name='date']").mask("99.99.9999");
 					
 			$("#list_orders").dataTable({
 					"sPaginationType": "full_numbers",
 					"aoColumns": [
+									{ "sType": "numeric-url", "sClass": "center" },
 									{ "sClass": "center" },
 									{ "sClass": "center" },
-									{ "sClass": "center" },
-									{ "sClass": "center" },
-									{ "sClass": "center"},
+									{ "sType": "date", "sClass": "center" },
 									{ "sClass": "center"},
 									{ "sClass": "center"}
 								]
 			});
-					
+			<% if(access != 0){ %>		
 					
 			$('form').validate({
 				submitHandler: function() {
@@ -31,7 +31,7 @@
 					
 			$("input[name='no_save']").click(function(){
 				buff_msg = 'not';
-				$('#save *').attr("disabled", false);
+				$('#'+name_form+' *').attr("disabled", false);
 				$('#pbdiv').hide();
 			});
 					
@@ -41,13 +41,13 @@
 					name_form = $(this).attr('id');
 					flag_valid = false;
 					$('#pbdiv').show();
-					var array_table = $('#save').serializeArray();
+					var array_table = $('#'+name_form+' *').serializeArray();
 					$('#'+name_form+' *').attr("disabled", true);
 					$('#status').text('Подключение к серверу.').css('color','#333');
 					$('#progressbar').progressbar({ value: 0 });
-					buff_msg = 'new_order';
+					buff_msg = 'new';
 					buff_arr = array_table;
-					socket.emit(buff_msg, name_form, id, array_table);
+					socket.emit(buff_msg, name_form, array_table);
 				}
 				return false;
 			});
@@ -65,13 +65,12 @@
 				$('#progressbar').progressbar({ value: 70 });
 				$('#'+name_form+' *').attr("disabled", false);
 				$('#list_orders').dataTable().fnAddData( [
-					'<a href="/<%= user.role %>/orders/view/main/'+new_order.ID+'">'+new_order.ID+'</a>',
+					'<a href="/orders/view/main/'+new_order+'">'+new_order+'</a>',
 					'<span class="warning">'+buff_arr[1].value+'</span>',
-					'<a href="/<%= user.role %>/customers/view/main/'+buff_arr[0].value+'">'+$('select[name="CUSTOMER_ID"] :selected').text()+'</a>',
-					'<span class="warning">'+$('select[name="TYPE"] :selected').text()+'</span>',
+					'<a href="/customers/view/main/'+buff_arr[0].value+'">'+$('select[name="c_id"] :selected').text()+'</a>',
+					'<span class="warning">'+buff_arr[2].value+'</span>',
 					'<span class="warning">'+buff_arr[3].value+'</span>',
-					'<span class="warning">'+$('select[name="STATUS"] :selected').text()+'</span>',
-					'<span class="warning">'+buff_arr[5].value+'</span>'
+					'<span class="warning">Вы</span>'
 				]);
 				$('#status').text('Добовление данных к таблице.');
 				$('#'+name_form)[0].reset();
@@ -88,52 +87,37 @@
 					$('#pbdiv').hide();
 				}, 6000);
 			});
-					
 			$('#new_order_div').hide();
 			$('#datepicker').datepicker();
+			<%}%>	
 						
 	});
 	</script>
-	<%- partial('status') %>
+	<%@ status %>
+	<% if(access != 0){ %>
 	<h1>Новый договор<img id="new_order" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
 	<div id="new_order_div">
-	<form method="post" id="save" action="/">
+	<form method="post" id="order" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
 		<tr>
-		<td align="right">Заказчик*:</td>
-		<td><select name="CUSTOMER_ID">
-		<% list_customers.forEach (function(customer){ %>
-			<option value="<%= customer.ID %>"><%= customer.NAME %>&nbsp;&nbsp; <%= customer.NAME_SOB %> </option>
-			<% }) %>
+		<td align="right">Заказчик:</td>
+		<td><select name="c_id">
+		<%for (var i = 0; i < list_customers.length; i++) {%>
+			<%if(list_customers[i].u_id === user.id){%><option value="<%= list_customers[i].c_id %>"><%= list_customers[i].formatname  %> </option>
+			<% }} %>
 		</select></td>
 	  </tr>
 	  <tr>
 		<td width="20%" align="right">Название:*</td>
-		<td width="80%"><input name="NAMEORDERS" type="text" size="20" class="required"></td>
-	  </tr>
-	  <tr>
-		<td align="right">Тип договора:</td>
-		<td><select name="TYPE">
-			<option value="0">Поставка товара</option>
-			<option value="1">Оказание услуг</option>
-		</select></td>
+		<td width="80%"><input name="name" type="text" size="20" autocomplete="off" class="required"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Дата заключения:</td>
-		<td><input name="DATE" id="datepicker" type="text" size="20"></td>
-	  </tr>
-	  <tr>
-		<td align="right">Статус договора:</td>
-		<td><select name="STATUS">
-			<option value="0">Согласование</option>
-			<option value="1">На подписании</option>
-			<option value="2">Подписан</option>
-			<option value="3">Приостановлен</option>
-		</select></td>
+		<td><input name="date" id="datepicker" type="text" size="20" ></td>
 	  </tr>
 	  <tr>
 		<td align="right">Примечание:</td>
-		<td><textarea name="note" cols="60" rows="5"></textarea>
+		<td><textarea name="note" cols="60" rows="5"></textarea></td>
 	  </tr>
 	  <tr>
 		<td align="right"></td>
@@ -142,6 +126,7 @@
 	</table>
 	</form>
 	</div>
+	<%}%>
 	<h1>Список договоров</h1>
 	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_orders">
 	<thead>
@@ -149,34 +134,31 @@
 			<th width="30px">№</th>
 			<th>Название</th>
 			<th>Заказчик</th>
-			<th width="110px">Тип</th>
 			<th>Дата заключения</th>
-			<th>Статус</th>
 			<th>Примечание</th>
+			<th>Менеджер</th>
 		</tr>
 	</thead>
 	<tbody >
-		<% if(list_orders){%>
-		<% list_orders.forEach (function(orders){ %>
-		<tr class="<% if(orders.STATUS === 0){ %>odd gradeU<%} if(orders.STATUS === 1){ %>odd gradeB<%} if(orders.STATUS === 2){ %>odd gradeA<%} if(orders.STATUS === 3){ %>odd gradeX<%}%>" >
-			<td><a href="/<%= user.role %>/orders/view/main/<%= orders.ID %>"><%= orders.ID %></a></td>
-			<td><%= orders.NAMEORDERS %></td>
-			<td><a href="/<%= user.role %>/customers/view/main/<%= orders.C_ID %>"><%  if(orders.INN === "1111111111"){ %> Физ. лицо <%} else {%> <%= orders.NAME_SOB %> <%}%> &laquo;<%= orders.NAME %>&raquo;</a></td>
-			<td><% if(orders.TYPE === 0){ %> Поставка товара <%} else {%> Оказание услуг <%}%></td>
-			<td><%= orders.DATE %></td>
-			<td><% if(orders.STATUS === 0){ %>Согласование<%} if(orders.STATUS === 1){ %>На подписании<%} if(orders.STATUS === 2){ %>Подписан<%} if(orders.STATUS === 3){ %>Приостановлен<%}%></td>
-			<td><%= orders.NOTE %></td>
+		<%if(list_orders){%>
+		<%for (var i = 0; i < list_orders.length; i++) {%>
+		<tr class=<% if(list_orders[i].customer.u_id ===  user.id){ %>"gradeA"<%}else {%>"gradeB"<%}%>>
+			<td><a href="/orders/view/main/<%= list_orders[i].o_id %>"><%= list_orders[i].o_id %></a></td>
+			<td><%= list_orders[i].name %></td>
+			<td><a href="/customers/view/main/<%= list_orders[i].c_id %>"><%= list_orders[i].customer.c_name %> </a></td>
+			<td><%= list_orders[i].formatdate %></td>
+			<td><%= list_orders[i].note %></td>
+			<td><%= list_orders[i].customer.fio  %></td>
 		</tr>
-		<% })}%>
+		<% }}%>
 	<tfoot>
 		<tr>
 			<th>№</th>
 			<th>Название</th>
 			<th>Заказчик</th>
-			<th>Тип</th>
 			<th>Дата заключения</th>
-			<th>Статус</th>
 			<th>Примечание</th>
+			<th>Менеджер</th>
 		</tr>
 	</tfoot>
 	</tbody>

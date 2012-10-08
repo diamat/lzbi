@@ -1,3 +1,4 @@
+	<% this.extend('layout'); %>
 	<script type="text/javascript">
 	$(document).ready(function() {	
 					
@@ -51,7 +52,7 @@
 							$('#save')[0].reset();
 							$('#progressbar').progressbar({ value: 100 });
 							setTimeout(function() {
-								location.href='/<%= user.role %>/users';
+								location.href='/users';
 								
 							}, 1000);
 						});
@@ -66,7 +67,7 @@
 					
 			});
 	</script>
-	<%- partial('status') %>
+	<%@ status %>
 	<h1>Редактировать пользователя</h1>
 	<form method="post" id="save" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
@@ -85,9 +86,9 @@
 	  <tr>
 		<td align="right">Компания:</td>
 		<td><select name="company">
-		<% listcustomers.forEach (function(customers){ %>
-			<option value="<%= customers.ID %>" <% if(users.company == customers.ID) { %> selected<%}%>><%= customers.NAME_SOB %>&nbsp;&laquo;<%= customers.NAME %>&raquo;</option>
-			<% }) %>
+		<%for (var i = 0; i < listcustomers.length; i++) {%>
+			<option value="<%= listcustomers[i].id %>"><%= listcustomers[i].name %></option>
+			<% } %>
 		</select></td>
 	  </tr>
 	  <tr>
@@ -95,6 +96,8 @@
 		<td><select name="role" >
 			<option value="manager"<% if(users.role == "manager") { %> selected<%}%>>manager&nbsp;&nbsp;</option>
 			<option value="admin" <% if(users.role == "admin") { %> selected<%}%>>admin&nbsp;&nbsp;</option>
+			<option value="bigboss" <% if(users.role == "bigboss") { %> selected<%}%>>bigboss&nbsp;&nbsp;</option>
+			<option value="buhmanager" <% if(users.role == "buhmanager") { %> selected<%}%>>buhmanager&nbsp;&nbsp;</option>
 		</select></td>
 	  </tr>
 	  <tr>

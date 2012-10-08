@@ -1,180 +1,167 @@
-var orderssql = require('../models/orders_main');
+var Orders = require('../models/orders');
+var customersBank = require('../models/customerbank');
+var Address = require('../models/address');
+var Contact = require('../models/contact');
 var sanitize = require('validator').sanitize;
-var ordersval = require('../validator/orders-val');
+var bankBik = require('../models/bankbik');
+var validator = require('../validator/orders-val');
 var sessionsave = require('../lib/sessionsave');
 var my_sys = require('../lib/my_sys');
-
+var Bills = require('../models/bills');
 
 exports.SocketAction = function (socket, client) {
-
-		socket.on('new_order', function (name_form, id, array_table) {
-			if(array_table[0].value && array_table[1].value){
-				var OrdersSQL = new orderssql();
-				var valid = new ordersval();
-				var table_active = [];
-				if(array_table[3].value === "") array_table[3].value = my_sys.DateNorm();
-				for(var i=0;i<array_table.length;i++){
-					if(!array_table[i].value) table_active[i] = 0;
-					else {
-					table_active[i] = 1; array_table[i].value = my_sys.addslashes(array_table[i].value); array_table[i].value = sanitize(array_table[i].value).entityEncode(); array_table[i].value = sanitize(array_table[i].value).xss();
-					}	
-				}
-				
-				valid.Orders(array_table, table_active);
-				
-				valid.on('valid_error', function (err) {
-					socket.emit('err_save', err);
-				});
-				
-				valid.on('valid_OK', function () {
+	
+		socket.on('new', function (name_form, array_table) {
+			var data = my_sys.returnObj(array_table);
+			if(!data.date) data.date = my_sys.dateSave();
+			else data.date = my_sys.dateNorm(data.date);
+			var valid;
+			var namemodel;
+			var model = 'error';
+			if(name_form === 'order') valid = 0;
+			if(name_form === 'suborder') valid = 1;
+			if(name_form === 'suborderprod') {valid = 2; data.datacreate = my_sys.dateSave();}
+			validator.validForm(data, valid, function(err, result){
+				if(err) socket.emit('err_save', err);
+				else {
 					socket.emit('start_save');
-					OrdersSQL.New_Order(array_table, table_active);	
-				});
-				
-				OrdersSQL.on('save_new_order_ok', function (new_order) {
-					socket.emit('end_save', new_order); 
-				});
-				
-				OrdersSQL.on('error', function (err) {
-					socket.emit('err_save', err);
-				});
-			
-			}
-			else socket.emit('err_save','Не указанны обязательные поля!');
+					var orders = new Orders(client);
+					if(name_form === 'order') {namemodel = 'Order'; model = orders.createOrder(data);}	
+					if(name_form === 'suborder') {namemodel = 'SubOrder'; model = orders.createSubOrder(data);}	
+					if(name_form === 'suborderprod') {namemodel = 'SubOrderProd'; model = orders.createSubOrderProd(data);}	
+					if(model != 'error'){
+						model.save(namemodel, function (err, res) {
+							if(err) socket.emit('err_save', err);
+							else {
+								socket.emit('end_save', res.saveInRedis);
+								}
+						});
+					} else socket.emit('err_save', 'Ошибка сохранения '+namemodel);
+				}
+			});
 		});
 		
-		socket.on('new_suborder', function (name_form, id, array_table) {
-			if(array_table[0].value){
-				var OrdersSQL = new orderssql();
-				var valid = new ordersval();
-				var table_active = [];
-				if(array_table[1].value === "") array_table[1].value = my_sys.DateNorm();
-				for(var i=0;i<array_table.length;i++){
-					if(!array_table[i].value) table_active[i] = 0;
-					else {
-					table_active[i] = 1; array_table[i].value = my_sys.addslashes(array_table[i].value); array_table[i].value = sanitize(array_table[i].value).entityEncode(); array_table[i].value = sanitize(array_table[i].value).xss();
-					}	
-				}
-				
-				valid.empty();
-				
-				valid.on('valid_error', function (err) {
-					socket.emit('err_save', err);
-				});
-				
-				valid.on('valid_OK', function () {
-					socket.emit('start_save');
-					OrdersSQL.New_SubOrder(array_table, table_active);	
-				});
-				
-				OrdersSQL.on('save_new_suborder_ok', function (new_suborder) {
-					socket.emit('end_save', new_suborder); 
-				});
-				
-				OrdersSQL.on('error', function (err) {
-					socket.emit('err_save', err);
-				});
-			
-			}
-			else socket.emit('err_save','Не указанны обязательные поля!');
-		});
 		
-		socket.on('new_suborders_prod', function (name_form, id, array_table) {
-			if(array_table[0].value && array_table[2].value && array_table[3].value){
-				var OrdersSQL = new orderssql();
-				var valid = new ordersval();
-				var table_active = [];
-				for(var i=0;i<array_table.length;i++){
-					if(!array_table[i].value) table_active[i] = 0;
+		socket.on('sumbill', function (array_table) {
+			array_table.splice(0,2);
+			var data = {};
+			var sum = [];
+			var allsum = 0;
+			var buff = 0;
+			var error = 0;
+			var id = [];
+			console.log(array_table);
+			for(var i=0;i<(array_table.length-1)/2;i++)
+			{	
+				if(error === 1) break;
+				data.id =  array_table[i*2].name.substr(5);
+				data.price = my_sys.trim(array_table[i*2].value, ' ');
+				data.number = my_sys.trim(array_table[i*2+1].value, ' ');
+				if(data.price === '') data.price = '0';
+				if(data.number === '') data.number = '0';
+				validator.validForm(data, 3, function(err, result){
+					if(err) {error = 1; socket.emit('err_bills', err);}
 					else {
-					table_active[i] = 1; array_table[i].value = my_sys.addslashes(array_table[i].value); array_table[i].value = sanitize(array_table[i].value).entityEncode(); array_table[i].value = sanitize(array_table[i].value).xss();
-					}	
-				}
-				
-				valid.SubOrdersProd(array_table, table_active);
-				
-				valid.on('valid_error', function (err) {
-					socket.emit('err_save', err);
-				});
-				
-				valid.on('valid_OK', function () {
-					table_active[2] = 0;
-					table_active[3] = 0;
-					table_active[4] = 0;
-					socket.emit('start_save');
-					OrdersSQL.New_SubOrderProd(array_table, table_active);	
-				});
-				
-				OrdersSQL.on('save_new_suborders_prod_ok', function (new_suborder) {
-					socket.emit('end_save', new_suborder); 
-				});
-				
-				OrdersSQL.on('error', function (err) {
-					socket.emit('err_save', err);
-				});
-			
-			}
-			else socket.emit('err_save','Не указанны обязательные поля!');
-		});
-		
-		socket.on('update_form_save', function (name_form, id, array_table, suborder_id) {
-			var prov_array = 0;
-			if(name_form === 'suborderprod_main') {if (array_table[0].value && array_table[2].value && array_table[3].value)  prov_array = 2;}
-			else if(array_table[0].value) prov_array = 1;
-			if(prov_array != 0){
-				var OrdersSQL = new orderssql();
-				var valid = new ordersval();
-				var newsocketio = new sessionsave();
-				var table_active = [];
-				if(array_table[1].value === "" && name_form === "suborder_main") array_table[1].value = my_sys.DateNorm();
-				if(name_form === "order_main") if(array_table[3].value === "") array_table[3].value = my_sys.DateNorm();
-				for(var i=0;i<array_table.length;i++){
-					if(!array_table[i].value) table_active[i] = 0;
-					else {
-					table_active[i] = 1; array_table[i].value = my_sys.addslashes(array_table[i].value); array_table[i].value = sanitize(array_table[i].value).entityEncode(); array_table[i].value = sanitize(array_table[i].value).xss();
+						buff = data.price*data.number;
+						allsum = allsum + buff;
+						id.push (data.id);
+						sum.push(my_sys.StrToFl(buff, 2 ,' '));
 					}
-					
-				}
-				
-				var nameedit;
-				
-				if(name_form === "order_main") {nameedit = 'main'; valid.Orders(array_table, table_active);}
-				if(name_form === "suborder_main") {nameedit = 'suborder'; valid.empty();}
-				if(name_form === "suborderprod_main") {nameedit = 'suborderprod'; valid.SubOrdersProd(array_table, table_active);}
-				
-				valid.on('valid_error', function (err) {
-					socket.emit('err_save', err);
 				});
-				
-				valid.on('valid_OK', function () {
-					socket.emit('start_save');
-					newsocketio.SocketEditDelete ('orders/edit/'+nameedit+'/'+id);
-				});
-				
-				newsocketio.on('SocketEditDelete_Ok', function(){
-					var table_name;
-					if(name_form === 'order_main') table_name = 'orders'; 
-					if(name_form === 'suborder_main') table_name = 'suborders'; 
-					if(name_form === "suborderprod_main"){
-						table_name = 'suborders_prod';
-						if(!array_table[4].value) array_table[4].value = 0;
-						var data = {suborder_id: suborder_id, price: array_table[2].value, number: array_table[3].value, otkat: array_table[4].value};
-						OrdersSQL.AddSubordersProd (id, data);
-						array_table.pop(); array_table.pop(); array_table.pop(); 
-					} 
-					OrdersSQL.UpdateMainOrder(table_name, id, array_table);	
-				});
-				
-				OrdersSQL.on('update_ok', function () {
-					newsocketio.SocketTimeDocSave ('orders/edit/'+nameedit+'/'+id);
-					socket.emit('end_save'); 
-				});
-				
-				OrdersSQL.on('error', function (err) {
-					socket.emit('err_save', err);
-				});
-			
 			}
-			else socket.emit('err_save','Не указанны обязательные поля!');
+			if(error === 0) socket.emit('end_sum_bills', id, sum, my_sys.StrToFl(allsum, 2 ,' '));	
 		});
+		
+		socket.on('savebill', function (array_table, flag) {
+			var dataarr = [];
+			var buff = 0;
+			var errorflag = 0;
+			var sum = 0;
+			var gi = 5;
+			if(flag) var gi = 6;
+			var arr1 = array_table.splice(2,array_table.length-gi);
+			var datamain = my_sys.returnObj(array_table);
+			if(!datamain.date) datamain.date = my_sys.dateSave();
+			else datamain.date = my_sys.dateNorm(datamain.date);
+			validator.validForm(datamain, 4, function(err, result){
+				if(err) socket.emit('err_save', err);
+				else {	
+						for(var i=0;i<(arr1.length)/2;i++)
+						{	
+							if(errorflag === 1) break;
+							var data = {};
+							data.id =  arr1[i*2].name.substr(5);
+							data.price = my_sys.trim(arr1[i*2].value, ' ');
+							data.number = my_sys.trim(arr1[i*2+1].value, ' ');
+							if(data.price === '') data.price = '0';
+							if(data.number === '') data.number = '0';
+							if(data.price != '0' && data.number != '0'){
+								validator.validForm(data, 3, function(error, res){
+									if(error) {errorflag = 1; socket.emit('err_save', error);}
+									else {
+										sum = sum + (data.price*data.number);
+										dataarr.push (data);
+									}
+								});
+							}
+						}
+						if(errorflag === 0) {
+							if(sum!=0){
+								socket.emit('start_save');
+								datamain.sum = my_sys.StrToFl(sum, 2,'');
+								var bills = new Bills(client);
+								var model = bills.createMain(datamain);
+								if(model != 'error'){
+								model.saveAll(dataarr, function (error, res) {
+									if(error) socket.emit('err_save', error);
+									else socket.emit('end_bill_save');
+									});
+								} else socket.emit('err_save', 'Ошибка сохранения счета');		
+							} else socket.emit('err_save', 'Ошибка - сумма счета равна 0');	
+						} 
+				}
+			});
+		});
+		
+		socket.on('update', function (name_form, id, array_table) {
+			var data = my_sys.returnObj(array_table);
+			if(!data.date) data.date = my_sys.dateSave();
+			else data.date = my_sys.dateNorm(data.date);
+			var valid;
+			var namemodel;
+			var model = 'error';
+			var newsocketio = new sessionsave();
+			if(name_form === 'order') valid = 0; 
+			if(name_form === 'suborder') valid = 1; 
+			if(name_form === 'suborderprod') valid = 2; 
+			validator.validForm(data, valid, function(err, result){
+				if(err) socket.emit('err_save', err);
+				else {
+					socket.emit('start_save');
+					newsocketio.socketEditDelete ('orders/edit/'+name_form+'/'+id);
+				}
+			});
+			
+			newsocketio.on('error', function(){
+				socket.emit('err_save', 'error socketEditDelete');
+			});
+			
+			newsocketio.on('SocketEditDelete_Ok', function(){
+					var orders = new Orders(client);
+					console.log(data);
+					if(name_form === 'order') {namemodel = 'Order'; model = orders.createOrder(data);}	
+					if(name_form === 'suborder') {namemodel = 'SubOrder'; model = orders.createSubOrder(data);}	
+					if(name_form === 'suborderprod') {namemodel = 'SubOrderProd'; model = orders.createSubOrderProd(data);}	
+					if(model != 'error'){
+						model.update(id, namemodel, function (err, res) {
+							if(err) socket.emit('err_save', err);
+							else {
+								newsocketio.socketTimeDocSave('orders/edit/'+name_form+'/'+id);
+								socket.emit('end_save');
+								}
+						});
+					} else socket.emit('err_save', 'Ошибка сохранения заказчика');
+			});
+		});
+
 };

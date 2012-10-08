@@ -1,0 +1,116 @@
+	<% this.extend("layout"); %>
+	<script type="text/javascript">
+	var idpp = 0;
+	function addCustomer(inn, name) 
+				{ 
+				$('#pbdiv').show();
+				socket.emit('new_cid', inn, name, '<%= user.id %>');
+				idpp = inn;
+				} 
+				
+	function updateCustomer(c_id, inn, name, u_id) 
+				{ 
+				$('#pbdiv').show();
+				socket.emit('update_cname', c_id, inn, name,  u_id);
+				idpp = inn;
+				} 
+	
+	$(document).ready(function() {			
+			$("#list_inbank").dataTable({
+					"sPaginationType": "full_numbers",
+					"aoColumns": [
+									{ "sClass": "center" },
+									{ "sType": "date", "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center"},
+									{ "sClass": "center"},
+									{ "sClass": "center"},
+									{ "sClass": "center"},
+									{ "sClass": "center"},
+									{ "sClass": "center"}
+								]
+				});
+				
+				$("input[name='no_save']").click(function(){
+				buff_msg = 'not';
+				$('#'+name_form+' *').attr("disabled", false);
+				$('#bill *').attr("disabled", false);
+				$('#pbdiv').hide();
+			});
+				
+				//socket
+					socket.on('start_save', function () {
+						buff_msg = 'not';
+						$('#status').text('Обработка данных на сервере.');
+						$('#progressbar').progressbar({ value: 35 });
+					});
+					
+					socket.on('end_save', function (new_customer) {
+						$('#status').text('Данные на сервере сохраненны.');
+						$('#progressbar').progressbar({ value: 70 });
+						$('#progressbar').progressbar({ value: 100 });
+						setTimeout(function() {
+							$('#pbdiv').hide();
+							$('p[name=action'+idpp+']').text('-');
+						}, 1000);
+					});
+				
+					socket.on('err_save', function (err) {
+					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+					setTimeout(function() {
+							$('#pbdiv').hide();
+						}, 6000);
+					});
+			});
+	</script>
+	<%@ status %>
+	<h1>Загрузка входящих п/п</h1>
+<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_inbank">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата поступления:</th>
+			<th>Сумма:</th>
+			<th>Заказчик по п/п:</th>
+			<th>Заказчик по БД:</th>
+			<th>ИНН:</th>
+			<th>Р/С:</th>
+			<th>Назначение:</th>
+			<th>Статус:</th>
+			<th>Действие:</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%for (var i = 0; i < in_bank.length; i++) {%>
+		<tr class=<% if(in_bank[i].c_id != undefined){ %>"gradeA"<%}else {%>"gradeX"<%}%>>
+			<td><% if(in_bank[i].ib_id != undefined){ %><a href='/buh/view/inbank/<%= in_bank[i].ib_id %>'><%=  in_bank[i].no %></a><%}else {%><%=  in_bank[i].no %><%}%></td>
+			<td><%= in_bank[i].formatdate %></td>
+			<td><%= in_bank[i].sum %></td>
+			<td><%= in_bank[i].formatname %></td>
+			<td><% if(in_bank[i].c_name != undefined){%><a href='/customers/view/main/<%= in_bank[i].c_id %>'><%= in_bank[i].c_name %><%}else {%>нет<%}%></td>
+			<td><%= in_bank[i].inn %></td>
+			<td><%= in_bank[i].rs %></td>
+			<td><%= in_bank[i].pop %></td>
+			<td><%= in_bank[i].status %></td>
+			<td><p name='action<%= in_bank[i].inn %>'><% if(in_bank[i].ib_id != undefined){ if(in_bank[i].formatname != in_bank[i].c_name){%>
+			<a href="javascript: updateCustomer('<%= in_bank[i].c_id %>','<%= in_bank[i].inn %>','<%= in_bank[i].formatname %>','<%= in_bank[i].u_id %>');">
+			Сохр. назв. компании из п/п</a><%}else{%>-<%}}else {%><a href="javascript: addCustomer('<%= in_bank[i].inn %>','<%= in_bank[i].formatname %>');">Добавить компанию в БД</a><%}%></p></td>
+		</tr>
+		<% }%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата поступления:</th>
+			<th>Сумма:</th>
+			<th>Заказчик по п/п:</th>
+			<th>Заказчик по БД:</th>
+			<th>ИНН:</th>
+			<th>Р/С:</th>
+			<th>Назначение:</th>
+			<th>Статус:</th>
+			<th>Действие:</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>

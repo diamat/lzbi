@@ -1,0 +1,194 @@
+	<% this.extend("layout"); %>
+	<script type="text/javascript">
+	$(document).ready(function() {	
+					
+					
+					$("input[name='inn']").mask("9999999999");
+					$("input[name='kpp']").mask("999999999");
+					$("input[name='ogrn']").mask("9999999999999");
+					$("input[name='okpo']").mask("99999999");
+					$("input[name='phones']").mask("(999) 999-9999? доб.9999");
+					$("input[name='fax']").mask("(999) 999-9999? доб.9999");
+					
+					
+					$('#list_providers').dataTable( {
+						"sPaginationType": "full_numbers",
+						"aoColumns": [
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" },
+									{ "sClass": "center" }
+								]
+					});
+					
+					$("#save").validate({
+					   submitHandler: function() {
+						 flag_valid = true;
+					   }
+					});
+					
+					$("input:text").keydown(function (event) {
+						if (event.keyCode == 13) {
+						event.preventDefault();
+						}
+					});
+					
+					$("input[name='no_save']").click(function(){
+						buff_msg = 'not';
+						$('#'+name_form+' *').attr("disabled", false);
+						$('#pbdiv').hide();
+					});
+					
+					$('#save').submit(function(){
+							if(flag_valid === true){
+								flag_valid = false;
+								name_form = $(this).attr('id');
+								$('#pbdiv').show();
+								var array_table = $('#'+name_form+' *').serializeArray();
+								$('#save *').attr("disabled", true);
+								$('#status').text('Подключение к серверу.').css('color','#333');
+								$('#progressbar').progressbar({ value: 0 });
+								buff_msg = 'new_provider';
+								socket.emit('new_provider', name_form, id, array_table);
+							}
+							return false;
+					});
+					
+					//socket
+					socket.on('start_save', function () {
+						buff_msg = 'not';
+						$('#status').text('Обработка данных на сервере.');
+						$('#progressbar').progressbar({ value: 35 });
+					});
+					
+					socket.on('end_save', function (new_customer) {
+						$('#status').text('Данные на сервере сохраненны.');
+						$('#progressbar').progressbar({ value: 70 });
+						$('#save *').attr("disabled", false);
+						var contragent;
+						var name_sob;
+						var sel = $("select[name='forma_sob'] :selected").val();
+						if(sel != 0){
+							$('#list_providers').dataTable().fnAddData( [
+							"<a href='/providers/view/main/"+new_customer+"'>"+$("input[name='name']").val()+"</a>",
+							"<strong>"+$("input[name='inn']").val()+"</strong>",
+							$("input[name='phones']").val()+" / "+$("input[name='fax']").val(),
+							"<a href='http://"+$("input[name='www']").val()+"'>"+$("input[name='www']").val()+"</a>",
+							"-"
+							]);
+						}
+						$('#status').text('Добовление данных к таблице.');
+						$('#save')[0].reset();
+						$('#progressbar').progressbar({ value: 100 });
+						setTimeout(function() {
+							$('#pbdiv').hide();
+							$('#new_customer_div').hide();
+						}, 1000);
+					});
+				
+					socket.on('err_save', function (err) {
+					$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+					setTimeout(function() {
+							$('#save *').attr("disabled", false);
+							$('#pbdiv').hide();
+						}, 6000);
+					});
+					
+					$('#help_div').hide();
+					$('#new_customer_div').hide();
+			});
+	</script>
+	<%@ status %>
+	<h1>Новый поставщик<img id="new_customer" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="new_customer_div">
+	<form method="post" id="save" action="/">
+	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
+	  <tr>
+		<td align="right">Название:*</td>
+		<td><input name="name" type="text" size="40" autocomplete="off" class="required"></td>
+	  </tr>
+	  <tr>
+		<td width="20%" align="right">ИНН:*</td>
+		<td width="80%"><input name="inn" type="text" size="13" autocomplete="off" class="required">&nbsp;&nbsp;<a href="http://www.kartoteka.ru/search/" target="_blank">Поиск в реестре</a></td>
+	  </tr>
+	  <tr>
+		<td align="right">Поставщик:</td>
+		<td><select name="typepg">
+		<%for (var i = 0; i < spravProdGroup.length; i++) {%>
+			<option value="<%= spravProdGroup[i].id %>"><%= spravProdGroup[i].name  %> </option>
+			<% } %>
+		</select></td>
+	  </tr>
+	  <tr>
+		<td align="right">КПП:</td>
+		<td><input name="kpp" type="text" size="10" autocomplete="off"></td>
+	  </tr>
+	  <tr>
+		<td align="right">ОГРН:</td>
+		<td><input name="ogrn" type="text" size="20" autocomplete="off"></td>
+	  </tr>
+	  <tr>
+		<td align="right">ОКПО:</td>
+		<td><input name="okpo" type="text" size="20" autocomplete="off"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Телефон:</td>
+		<td><input  name="phones" type="text" SIZE="30" autocomplete="off"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Факс :</td>
+		<td><input  name="fax" type="text" SIZE="30" autocomplete="off"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Сайт компании: http://</td>
+		<td><input  name="www" type="text" SIZE="30" autocomplete="off"></td>
+	  </tr>
+	   <tr>
+		<td align="right">E-mail:</td>
+		<td><input name="email" type="text" SIZE="30" autocomplete="off" class="email"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Примечание:</td>
+		<td><textarea name="note" cols="60" rows="5"></textarea>
+	  </tr>
+	  <tr>
+		<td align="right"></td>
+		<td><button type="subbutton" id="sub">Сохранить</button></td>
+	  </tr>
+	</table>
+	</form>
+	</div>
+	<h1>Список всех поставщиков</h1>
+	<div id="u_customers_div">
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_providers">
+	<thead>
+		<tr>
+			<th width="20%">Название</th>
+			<th>ИНН</th>
+			<th>Телефон/Факс</th>
+			<th>WWW</th>
+			<th>Тип поставщика:</th>
+		</tr>
+	</thead>
+	<tbody >
+		<%for (var i = 0; i < customers.length; i++) {%>
+		<tr class="gradeA">
+			<td><a href="/providers/view/main/<%= customers[i].c_id %>"><%= customers[i].name %></a></td>
+			<td><%= customers[i].inn %></td>
+			<td><%= customers[i].phones %> / <%= customers[i].fax %></td>
+			<td><a href="http://<%= customers[i].www %>"><%= customers[i].www %></a></td>
+			<td><%for (var g = 0; g < spravProdGroup.length; g++) {%>
+			<% if(spravProdGroup[g].id === customers[i].typepg){%><%=spravProdGroup[g].name%><% }}%></td>
+		</tr>
+		<% }%>
+	<tfoot>
+		<tr>
+			<th width="20%">Название</th>
+			<th>ИНН</th>
+			<th>Телефон/Факс</th>
+			<th>WWW</th>
+			<th>Тип поставщика:</th>
+		</tr>
+	</tfoot></tbody></table>
+	</div>

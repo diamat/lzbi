@@ -1,0 +1,255 @@
+	<% this.extend("layout"); %>
+	<script type="text/javascript">
+	var idbill = 0;
+	var bill_sum = 0;
+	function addBill(id, sum) 
+				{ 
+				$('p[name=billid]').text('Счет №:'+id);
+				$('input[name=sum]').attr("value", sum);
+				$('#sub').attr("disabled", false);	
+				idbill = id;
+				bill_sum = sum;
+				} 
+				
+	function dellBill(bill_id) 
+				{ 
+				$('#pbdiv').show();
+				$('#sub').attr("disabled", false);	
+				socket.emit('delBill', bill_id, <%= inbank.ib_id %>);
+				} 
+				
+	function remove() 
+				{ 
+				$('#pbdiv').show();
+				$('#sub').attr("disabled", false);	
+				socket.emit('remove', '<%= inbank.ib_id %>');
+				} 
+				
+	$(document).ready(function() {						
+			$("#list_bills").dataTable({
+				"sPaginationType": "full_numbers",
+				"aaSorting": [[ 0, "desc" ]],
+				"aoColumns": [
+								{ "sType": "numeric-url", "sClass": "center" },
+								{ "sType": "date", "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" }
+							]
+			});
+			
+			$("#list_ibbills").dataTable({
+				"sPaginationType": "full_numbers",
+				"aaSorting": [[ 0, "desc" ]],
+				"aoColumns": [
+								{ "sType": "numeric-url", "sClass": "center" },
+								{ "sType": "date", "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" }
+							]
+			});
+			
+		
+		<%  if(access >  0 && access !=  1.5){%>		
+			$('#billadd').validate({
+				 submitHandler: function() {
+					flag_valid = true;
+				}
+			});
+					
+			$("input:text").keydown(function (event) {
+				if (event.keyCode == 13) {
+					event.preventDefault();
+				}
+			});
+					
+			$("input[name='no_save']").click(function(){
+				buff_msg = 'not';
+				$('#'+name_form+' *').attr("disabled", false);
+				$('#bill *').attr("disabled", false);
+				$('#pbdiv').hide();
+			});
+			
+			var subno = 1;
+
+			$('#billadd').submit(function(){
+				if(flag_valid === true){
+					var sumbill = $("input[name='sum']").val();
+					sumbill = parseFloat(sumbill);
+					if(isNaN(sumbill)=== true) {alert ('Ошибка ввода числа!');}
+					else if(sumbill > <%= inbank.sum-bills_sum %>) {alert ('Ошибка - сумма превышает остаток на п/п <%= (inbank.sum-bills_sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.'); 
+					 $('input[name=sum]').attr("value", '<%= (inbank.sum-bills_sum) %>');}
+					else if(sumbill > bill_sum) {alert ('Ошибка - сумма превышает остаток на счете '+bill_sum+' руб.'); $('input[name=sum]').attr("value", bill_sum);}
+					else {
+						name_form = $(this).attr('id');
+						flag_valid = false;
+						$('#pbdiv').show();
+						var array_table = $('#'+name_form+'').serializeArray();
+						$('#'+name_form+' *').attr("disabled", true);
+						$('#status').text('Подключение к серверу.').css('color','#333');
+						$('#progressbar').progressbar({ value: 0 });
+						buff_msg = 'addBill';
+						array_table[array_table.length] ={name:'ib_id', value : '<%= inbank.ib_id %>'};
+						array_table[array_table.length] ={name:'bill_id', value : idbill};
+						buff_arr = array_table;
+						socket.emit(buff_msg, array_table);
+					}
+				}
+				return false;
+			});
+			
+					
+			//socket
+			socket.on('start_save', function () {
+				buff_msg = 'not';
+				$('#status').text('Обработка данных на сервере.');
+				$('#progressbar').progressbar({ value: 35 });
+			});
+			
+			socket.on('end_remove', function () {
+				buff_msg = 'not';
+				$('#status').text('Обработка данных на сервере.');
+				setTimeout(function() {
+					$('#status').text('п/п удалено.');
+					$('#progressbar').progressbar({ value: 100 });
+					location.href='/buh';
+				}, 500);
+			});
+			
+			socket.on('end_save', function (new_suborder) {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				setTimeout(function() {
+					$('#status').text('Обновление страницы.');
+					$('#progressbar').progressbar({ value: 100 });
+					location.href='/buh/view/inbank/<%= inbank.ib_id %>';
+				}, 100);
+			});
+				
+			socket.on('err_save', function (err) {
+			$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+			setTimeout(function() {
+					$('#'+name_form+' *').attr("disabled", false);
+					$('#bill *').attr("disabled", false);
+					$('#pbdiv').hide();
+				}, 6000);
+			});
+			
+
+		<%}%>
+			$('#sub').attr("disabled", true);			
+	});
+	</script>
+	<%@ status %>
+	<h1>П/п №<%= inbank.ib_id %> (по б/к №<%= inbank.no%>) от <%= inbank.formatdate%></h1>
+	<strong>Заказчик:</strong> <a href="/customers/view/main/<%= inbank.c_id %>"><%= inbank.customer.c_name %></a> <strong>Менеджер:</strong> <%= inbank.customer.fio %><br>
+	<strong>ИНН:</strong> <%= inbank.customer.inn %> <br>
+	<strong>Расчетный счет заказчика:</strong> <%= inbank.rs %> <br>
+	<strong>Расчетный счет получателя:</strong> <%= inbank.in_rs %> <br>
+	<strong>Получатель:</strong> <%= inbank.namecomp %> <br>
+	<strong>Сумма:</strong> <%= inbank.formatsum %> руб.<br>
+	<strong>Остаток:</strong> <%= (inbank.sum-bills_sum).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб. <br>
+	<strong>Назначения платежа:</strong> <%= inbank.pop %> <br>
+	<%if(listbill.length === 0 && access ===  2) {%><a href="javascript: remove();">удалить п/п</a><%}%>
+		<h1>Список связанных счетов на сумму:  <%= (bills_sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ")%> руб.</h1>
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_ibbills">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Действие</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%if(billslist.length != 0)%>
+	<%for (var i = 0; i < billslist.length; i++) { var flag = 0; %>
+	<% var buff_sum = 0;%>
+		<%for (var z = 0; z < listbill.length; z++) if(billslist[i].bill_id === listbill[z].bill_id) flag = 1;%>
+		<% if(flag === 1){%>
+		<tr class="<% if(billslist[i].status === "2"){%>gradeX<%} else if(billslist[i].status === "1"){%>gradeU<%}else if(billslist[i].accept === "1"){%>gradeA<%}else{%>gradeB<%}%>">
+			<td><a href="/buh/view/bill/<%= billslist[i].bill_id %>"><%= billslist[i].bill_id %></a></td>
+			<td><%= billslist[i].formatdate  %></td>
+			<td><%= billslist[i].formatsum %></td>
+			<td><%= (billslist[i].sum-billslist[i].res_sum).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %></td>
+			<td><%if(billslist[i].inbank.length!=0){%>
+			<%for (var g = 0; g < billslist[i].inbank.length; g++) {%>
+			п/п: <a href="/buh/view/inbank/<%= billslist[i].inbank[g].ib_id %>"><%= billslist[i].inbank[g].ib_id %></a> - сумма: <%= (billslist[i].inbank[g].sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.; 
+			<% }%>
+			<strong>Итого: <%= (billslist[i].res_sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.</strong>
+			<% } else {%> - <%}%>
+			</td>
+			<td><%  if(access >  0 && access !=  1.5){%><a href="javascript: dellBill('<%= billslist[i].bill_id %>');">удалить</a><% }%></td>
+		</tr>
+		<% }}%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Действие</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	<%  if(access >  0 && access !=  1.5){%>	
+	<%if((inbank.sum-bills_sum)!=0){%>
+	<h1>Данные для связывания счета</h1>
+	<form method="post" id="billadd" action="/">
+	<p name='billid'>не выбран </p>
+	Сумма: <input name="sum" type="text" size="25" autocomplete="off" class="required">
+	<button type="subbutton" id="sub">Связать</button>
+	</form>
+	<h1>Список выставленных счетов</h1>
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_bills">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Действие</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%if(billslist.length != 0)%>
+	<%for (var i = 0; i < billslist.length; i++) { var flag = 0; %>
+	<% if(billslist[i].status ===  "0" && billslist[i].accept === "1" && billslist[i].id_comp === inbank.id_comp){ var buff_sum = 0;%>
+		<%for (var z = 0; z < listbill.length; z++) if(billslist[i].bill_id === listbill[z].bill_id) flag = 1;%>
+		<% if(flag === 0){%>
+		<tr class="gradeA">
+			<td><a href="/buh/view/bill/<%= billslist[i].bill_id %>"><%= billslist[i].bill_id %></a></td>
+			<td><%= billslist[i].formatdate  %></td>
+			<td><%= billslist[i].formatsum %></td>
+			<td><%= (billslist[i].sum-billslist[i].res_sum).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %></td>
+			<td><%if(billslist[i].inbank.length!=0){%>
+			<%for (var g = 0; g < billslist[i].inbank.length; g++) {%>
+			п/п: <a href="/buh/view/inbank/<%= billslist[i].inbank[g].ib_id %>"><%= billslist[i].inbank[g].ib_id %></a> - сумма: <%= (billslist[i].inbank[g].sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.; 
+			<% }%>
+			<strong>Итого: <%= (billslist[i].res_sum).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.</strong>
+			<% } else {%> - <%}%>
+			</td>
+			<td><a href="javascript: addBill('<%= billslist[i].bill_id %>','<%= billslist[i].sum-billslist[i].res_sum %>');">выбрать</a></td>
+		</tr>
+		<% }}}%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Дата</th>
+			<th>Сумма</th>
+			<th>Остаток</th>
+			<th>Связанные п/п</th>
+			<th>Действие</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	<%}}%>

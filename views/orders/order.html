@@ -1,21 +1,25 @@
+	<% this.extend("layout"); %>
 	<script type="text/javascript">
 	$(document).ready(function() {	
 		
 					
 					
-			$("input[name='DATE']").mask("99.99.9999");
+			$("input[name='date']").mask("99.99.9999");
 					
 			$("#list_suborders").dataTable({
 				"sPaginationType": "full_numbers",
+				"aaSorting": [[ 0, "desc" ]],
 				"aoColumns": [
 								{ "sType": "numeric-url", "sClass": "center" },
 								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sType": "date", "sClass": "center" },
 								{ "sClass": "center" },
 								{ "sClass": "center" }
 							]
 			});
 		
-		<%  if(access ==  1){%>		
+		<%  if(access >  0 && access !=  1.5){%>		
 			$('form').validate({
 				 submitHandler: function() {
 					flag_valid = true;
@@ -33,7 +37,9 @@
 				$('#'+name_form+' *').attr("disabled", false);
 				$('#pbdiv').hide();
 			});
-					
+			
+			var subno = <%= list.length+1 %>;
+			
 			$('form').submit(function(){
 				if(flag_valid === true){
 					name_form = $(this).attr('id');
@@ -43,11 +49,13 @@
 					$('#'+name_form+' *').attr("disabled", true);
 					$('#status').text('Подключение к серверу.').css('color','#333');
 					$('#progressbar').progressbar({ value: 0 });
-					buff_msg = 'new_suborder';
-					var buff_obj = {name:'ORDER_ID', value : '<%= order.ID %>'};
+					buff_msg = 'new';
+					var buff_obj = {name:'o_id', value : '<%= data.o_id %>'};
+					array_table[array_table.length] = buff_obj;
+					var buff_obj = {name:'sub_no', value : subno};
 					array_table[array_table.length] = buff_obj;
 					buff_arr = array_table;
-					socket.emit(buff_msg, name_form, id, array_table);
+					socket.emit(buff_msg, name_form, array_table);
 				}
 				return false;
 			});
@@ -66,11 +74,14 @@
 				$('#'+name_form+' *').attr("disabled", false);
 				$('#status').text('Добовление данных к таблице.');
 				$('#list_suborders').dataTable().fnAddData( [
-							'<a href="/<%= user.role %>/orders/view/suborder/'+new_suborder.ID+'">'+new_suborder.SUBNO+'</a>',
+							'<a href="/<%= action2%>/view/suborder/'+new_suborder+'">'+subno+'</a>',
 							'<span class="warning">'+buff_arr[0].value+'</span>',
 							'<span class="warning">'+buff_arr[1].value+'</span>',
-							'<span class="warning">'+buff_arr[2].value+'</span>'
+							'<span class="warning">'+buff_arr[2].value+'</span>',
+							'<span class="warning"> открытое прил.</span>',
+							'<span class="warning">'+buff_arr[3].value+'</span>'
 				]);
+				subno++;
 				$('#'+name_form)[0].reset();
 				$('#progressbar').progressbar({ value: 100 });
 				setTimeout(function() {
@@ -92,30 +103,32 @@
 						
 	});
 	</script>
-	<%- partial('status') %>
-	<h1>Договор №<%=order.ID%></h1>
-	<strong>Заказчик:</strong> <a href="/<%- user.role %>/customers/view/main/<%= order.CUSTOMER_ID %>"><%= order.NAME_SOB %> &laquo;<%= order.CNAME %>&raquo;</a><br>
-	<strong>Название:</strong> <%= order.NAMEORDERS %> <br>
-	<strong>Тип договора:</strong> <%  if(order.TYPE ==  0){ %>Поставка товара<%}else{%> Оказание услуг <%}%><br>
-	<strong>Дата заключения:</strong> <%= order.DATE %> <br>
-	<strong>Статус договора:</strong> <%  if(order.STATUS ==  0){ %>Согласование<%}if(order.STATUS ==  1){%> На подписании <%}if(order.STATUS ==  2){%>Подписан<%} if(order.STATUS ==  3){%>Приостановлен<%}%><br>
-	<strong>Примечание:</strong> <%- order.NOTE %> </p>
-	<%  if(access ==  1){ %><p><a href="/<%- user.role %>/<%- action2%>/edit/main/<%- order.ID  %>">Редактировать</a></p>
+	<%@ status %>
+	<h1>Договор №<%=data.o_id%></h1>
+	<strong>Заказчик:</strong> <a href="/customers/view/main/<%= data.customer.c_id %>"><%= data.customer.name %></a> <strong>Менеджер:</strong> <%= data.customer.fio %><br>
+	<strong>Название:</strong> <%= data.name %> <br>
+	<strong>Дата заключения:</strong> <%= data.formatdate %> <br>
+	<strong>Примечание:</strong> <%= data.note %> <br>
+	<%  if(access > 0 && access !=  1.5){ %><a href="/<%= action2%>/edit/main/<%= data.o_id  %>">Редактировать</a>
 	<h1>Добавить приложение к договору:<img id="save_suborder" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
 	<div id="save_suborder_div">
-	<form method="post" id="save_suborder_form" action="/">
+	<form method="post" id="suborder" action="/">
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
 	  <tr>
-		<td align="right">Название:*</td>
-		<td><input name="NAME" type="text" size="25" class="required"></td>
+		<td width="20%" align="right">Название:*</td>
+		<td width="80%"><input name="name" type="text" size="25" autocomplete="off" class="required"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Номер заявки:</td>
+		<td><input name="znubmer" type="text" size="25" autocomplete="off"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Дата заключения:</td>
-		<td><input name="DATE" id="datepicker" type="text" size="25"></td>
+		<td><input name="date" id="datepicker" type="text" size="25"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Примечание:</td>
-		<td><textarea name="NOTE" cols="60" rows="5"></textarea>
+		<td><textarea name="note" cols="60" rows="5"></textarea></td>
 	  </tr>
 	  <tr>
 		<td align="right"></td>
@@ -131,25 +144,34 @@
 		<tr>
 			<th width="30px">№</th>
 			<th>Название</th>
+			<th>Номер заявки</th>
 			<th>Дата заключения</th>
+			<th>Статус</th>
 			<th>Примечание</th>
 		</tr>
 	</thead>
 	<tbody >
-		<% if(listsuborders){%>
-		<% listsuborders.forEach (function(suborders){ %>
-		<tr class="odd gradeU" >
-			<td><a href="/<%= user.role %>/orders/view/suborder/<%= suborders.ID %>"><%= suborders.SUBNO %></a></td>
-			<td><%= suborders.NAME %></td>
-			<td><%= suborders.SDATE %></td>
-			<td><%= suborders.NOTE %></td>
+	<%if(list)%>
+	<%for (var i = 0; i < list.length; i++) {%>
+		<tr <% if(list[i].status === "0") { %> class="gradeA"<%} else {%>class="gradeB"<%}%>>
+			<td><a href="/orders/view/suborder/<%= list[i].subo_id %>"><%= list[i].sub_no %></a></td>
+			<td><%= list[i].name %></td>
+			<td><%= list[i].znubmer  %></td>
+			<td><%= list[i].formatdate %></td>
+			<td>
+			<%for (var g = 0; g < status.length; g++){%>
+			<% if(status[g].id === list[i].status) {%>
+			<%= status[g].name %><%}}%></td>
+			<td><%= list[i].note %></td>
 		</tr>
-		<% })}%>
+		<% }%>
 	<tfoot>
 		<tr>
 			<th width="30px">№</th>
 			<th>Название</th>
+			<th>Номер заявки</th>
 			<th>Дата заключения</th>
+			<th>Статус</th>
 			<th>Примечание</th>
 		</tr>
 	</tfoot>

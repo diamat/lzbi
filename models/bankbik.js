@@ -28,7 +28,7 @@ var  BankBikModel = module.exports =  function (client) {
 
 // Функция фабрика
 BankBikModel.prototype.create = function (bik, name, ks) {
-    var bankbik = new BankBikModel (this.client);
+	var bankbik = new BankBikModel(this.client);
     bankbik.bik = bik;
 	bankbik.name = name;
     bankbik.ks = ks;
@@ -79,23 +79,21 @@ BankBikModel.prototype._save = function (callback) {
 
 // BankBikModel.findByBankBikl
 BankBikModel.prototype.findByBankBik = function (bik, callback) {
-	var dublethis = this;
+	var thism = this;
 	this.client.hexists('bank:bik', this.kName(bik), function (err, res) {
-		if(err || res === 0) callback.call(dublethis, new Error('Такого банка не существует'), null, dublethis);
+		if(err || res === 0) callback(new Error('Такого банка не существует'), null);
 		else{
 			// Конструрируем запрос
-				var q = ['bank:bik', dublethis.kName(bik), dublethis.kKs(bik)];
-				dublethis.client.hmget(q, function(err, repl) {
-				 if (err) {
-					 if (callback) callback.call(dublethis, err, null, dublethis);
-				 } else if (repl) {
-					 var res = dublethis.create(bik, repl[0], repl[1]);
-					 if (callback) callback.call(dublethis, null, res, dublethis);
-				 } else {
-					 if (callback) callback.call(dublethis, null, null, dublethis);
-				 };
-				}.bind(dublethis));
-			}
+				var q = ['bank:bik', thism.kName(bik), thism.kKs(bik)];
+				thism.client.hmget(q, function(err, repl) {
+				if (err) {
+					if (callback) callback(err, null);
+				} else {
+					var res = thism.create(bik, repl[0], repl[1]);
+					callback(null, res);
+				} 
+			});
+		}
 	});
 
 };

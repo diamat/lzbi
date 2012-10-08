@@ -1,0 +1,145 @@
+	<% this.extend("layout"); %>
+	<script type="text/javascript">
+	function acceptAdd() 
+				{ 
+				$('#pbdiv').show();
+				socket.emit('accept', <%= bill.bill_id %>, <% if(bill.accept === "1"){%> 0 <%}else {%> 1 <%}%>);
+				idpp = inn;
+				} 
+				
+	function status2() 
+				{ 
+				$('#pbdiv').show();
+				socket.emit('status', <%= bill.bill_id %>, <% if(bill.status === "0"){%> 2 <%}else {%> 0 <%}%>);
+				idpp = inn;
+				} 
+	
+	$(document).ready(function() {			
+				
+			$("#list_prod").dataTable({
+				"sPaginationType": "full_numbers",
+				"aoColumns": [
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" },
+								{ "sClass": "center" }
+							]
+			});
+			
+		
+		<%  if(access >  0 && access !=  1.5){%>		
+
+					
+			$("input[name='no_save']").click(function(){
+				buff_msg = 'not';
+				$('#'+name_form+' *').attr("disabled", false);
+				$('#bill *').attr("disabled", false);
+				$('#pbdiv').hide();
+			});
+				
+			//socket
+			socket.on('start_save', function () {
+				buff_msg = 'not';
+				$('#status').text('Обработка данных на сервере.');
+				$('#progressbar').progressbar({ value: 35 });
+			});
+			
+			socket.on('end_bill_save', function () {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				setTimeout(function() {
+					$('#status').text('Обновление страницы.');
+					$('#progressbar').progressbar({ value: 100 });
+				}, 100);
+			});
+			
+			socket.on('end_save', function (new_suborder) {
+				$('#status').text('Данные на сервере сохраненны.');
+				$('#progressbar').progressbar({ value: 70 });
+				setTimeout(function() {
+					$('#status').text('Обновление страницы.');
+					$('#progressbar').progressbar({ value: 100 });
+					location.href='/buh/view/bill/<%= bill.bill_id%>';
+				}, 100);
+			});
+				
+			socket.on('err_save', function (err) {
+			$('#status').text('Ошибка сохранения: '+err).css('color','#FF0000');
+			setTimeout(function() {
+					$('#'+name_form+' *').attr("disabled", false);
+					$('#bill *').attr("disabled", false);
+					$('#pbdiv').hide();
+				}, 6000);
+			});
+			
+
+		<%}%>
+						
+	});
+	</script>
+	<%@ status %>
+	<h1>Счет №<%= bill.bill_id%> от <%=  bill.formatdate%></h1>
+	<strong>Договор:</strong> <a href="/orders/view/main/<%= bill.order.o_id %>"><%= bill.order.o_name %></a> <strong>Приложение:</strong> <a href="/orders/view/suborder/<%= bill.order.subo_id %>"><%= bill.order.subo_name %></a><br>
+	<strong>Заказчик:</strong> <a href="/customers/view/main/<%= bill.order.c_id %>"><%= bill.order.c_name %></a> <strong>Менеджер:</strong> <%= bill.order.fio %><br>
+	<strong>Счет выставлен:</strong> <%= bill.namecomp %><br>
+	<strong>Сумма:</strong> <%=  bill.formatsum %> руб. <br>
+	<strong>Статус:</strong> <% if(bill.status === "0"){%> счет не закрыт <%}else if(bill.status === "1"){%> счет закрыт <%}else if(bill.status === "2"){%> аннулирован <%}%><br>
+	<strong>Подпись:</strong> <% if(bill.accept === "1"){%> подписан <%}else {%> не подписан <%}%> <br>
+	<strong>Поступления:</strong> <%for (var g = 0; g < bill.inbank.length; g++) {%>
+			п/п: <a href="/buh/view/inbank/<%= bill.inbank[g].ib_id %>"><%= bill.inbank[g].ib_id %></a> - сумма: <%= bill.inbank[g].sum %>; 
+			<% }%>
+			<strong>Итого: <%= bill.res_sum %> руб.</strong> <br>
+	<strong>Остаток:</strong> <%= (bill.sum-bill.res_sum).toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ") %> руб.<br>
+	<strong>Примечание:</strong> <%= bill.note %> 
+	<h1>Продукция</h1>
+	<table cellpadding="0" cellspacing="0" border="0" class="display" id="list_prod">
+	<thead>
+		<tr>
+			<th width="30px">№</th>
+			<th>Список товаров/работ/услуг:</th>
+			<th>Кол-во:</th>
+			<th>Ед.</th>
+			<th>Цена</th>
+			<th>Сумма</th>
+			<th>Отгружено</th>
+			<th>Действие</th>
+		</tr>
+	</thead>
+	<tbody >
+	<%if(listprod)%>
+	<%for (var i = 0; i < listprod.length; i++) { var g = i+1;%>
+		<tr class=<% if(listprod[i].price ===  listprod[i].bill.formatprice){ %>"gradeA"<%}else {%>"gradeX"<%}%>>
+			<td><%= g %> </td>
+			<td><%= listprod[i].prodname  %> <%= listprod[i].addname  %></td>
+			<td><%= listprod[i].bill.number %></td>
+			<td><%= listprod[i].unitname %></td>
+			<td><%= listprod[i].bill.formatprice %> <% if(listprod[i].price !=  listprod[i].bill.formatprice){ %> (<%= listprod[i].price %>)<%}%></td>
+			<td><%= listprod[i].bill.sum %></td>
+			<td><% if(listprod[i].bill.shipnumber === null || listprod[i].group != "1"){%>0<%}else{%><%= listprod[i].bill.shipnumber.toFixed(2).toString().replace(/(\d)(?=(\d\d\d)+([^\d]|$))/g, "\$1"+" ")  %><%}%></td>
+			<td><% if((listprod[i].bill.shipnumber === null || (listprod[i].bill.shipnumber-listprod[i].bill.number)>0)&&bill.accept === "1"&& listprod[i].group != "1"){%><a href="/shipment/new/newship/<%= bill.bill_id%>/<%= listprod[i].prod_id %>">отгрузить</a><%}else{%>-<%}%></td>
+		</tr>
+		<% }%>
+	<tfoot>
+		<tr>
+			<th width="30px">№</th>
+			<th>Список товаров/работ/услуг:</th>
+			<th>Кол-во:</th>
+			<th>Ед.</th>
+			<th>Цена</th>
+			<th>Сумма</th>
+			<th>Отгружено</th>
+			<th>Действие</th>
+		</tr>
+	</tfoot>
+	</tbody>
+	</table>
+	<h1>Действия</h1>
+	<%  if(bill.status != "1" && bill.res_sum === 0 && access !=  1.5){%>
+	<%  if(access >  1){%>
+	<% if(bill.status != "2"){%><a href="javascript: acceptAdd();"><% if(bill.accept === "0"){%>Подписать<%}else {%> Снять подпись <%}%></a> |<%}%> <a href="javascript: status2();"><% if(bill.status === "2"){%>Восстановить<%} else {%>Аннулировать<%}%></a>
+	<% }}%>
+	<%  if(access >  1 && bill.accept === "1" && bill.res_sum === 0 && bill.status != "2" && access !=  1.5){%>|<%}%><% if(bill.accept === "1" && bill.status != "2"){%> <a href="/buh/print/bill/<%= bill.bill_id%>">Печать</a> <%}%>

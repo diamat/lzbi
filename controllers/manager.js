@@ -1,98 +1,95 @@
 //manager.js
-var CustomerSQL = require('../models/customers_main');
-var CustomerController = require('./customers_controller');
-var OrderController = require('./orders_controller');
-var sessionsave = require('../lib/sessionsave');
-var erraccess = 'error/err-access.html';
-var errtype = 'error/err-type.html';
-var errselect = 'error/err-select.html';
-var customersval = require('../validator/customers-val');
-
 var role = 'manager';
-var forma_sob = [];
-var list_customers = [];
+var erraccess = 'error/err-access.html';
+var errselect = 'error/err-select.html';
+var sessionsave = require('../lib/sessionsave');
+var CustomersController = require('./customers_controller');
+var OrdersController = require('./orders_controller');
+var BuhController = require('./buh_controller');
+var redis = require('redis');
+var client = redis.createClient();
+
 var main_menu = [ 
 	{id:'1', name: 'Главная', url:'/'},
-	{id:'2', name: 'Сообщения', url:'/'},
-	{id:'orders', name: 'Заказы', url: '/'+role+'/orders'},
-	{id:'customers', name: 'Контрагенты', url: '/'+role+'/customers'},
-	{id:'menu', name: 'Система', url: '/'+role+'/menu'}
+	{id:'customers', name: 'Клиенты', url:'/customers'},
+	{id:'orders', name: 'Заказы', url:'/orders'},
+	{id:'buh', name: 'Финансы', url:'/buh'}
 	];
 
 module.exports = {
 
   index: function(req, res){
-			if(req.session.user.role != role) res.render(erraccess);
-			else{
-				var user = req.session.user;
-				user.lastaccess = req.session.lastAccess;
-				var newsocketio = new sessionsave();
-				newsocketio.SocketnameSave(role+'-socket.js', user.lastaccess);		
-				newsocketio.on('SocketnameSave_Ok', function(){
-					res.render(role, {
-							locals: {
-								user: user,
-								main_menu: main_menu,
-								action: '1',
-								edit: 'нет'
-							}
-						});
+	if(req.session.user.role != role) res.render(erraccess);
+	else{
+		var user = req.session.user;
+		user.lastaccess = req.session.lastAccess;
+		var newsocketio = new sessionsave();
+		newsocketio.socketnameSave(role+'-socket.js', user.lastaccess);
+		res.render(role, {
+						user: user,
+						main_menu: main_menu,
+						action: '1',
+						edit: 'нет'
 				});
-			}
+	}
   },
   
-  menu: function(req, res){
-			if(req.session.user.role != role) res.render(erraccess);
-			else {
-			if(req.params.menu === 'customers'){
-					CustomerController.controllerRouting('main', req, res, role, main_menu);
-				} else if(req.params.menu === 'orders'){
-					OrderController.controllerRouting('main', req, res, role, main_menu);
-				} else res.render(errselect); 	
-			}
-  },
-  
-  id: function(req, res){
-			var valid = new customersval();
-			
-			valid.idInt(req.params.id);
-			
-			valid.on('valid_error', function (err) {
-					res.render(errtype);
-			});
-			
-			valid.on('valid_OK', function () {
-				if(req.session.user.role != role) res.render(erraccess);
-				else {
-					if(req.params.menu === 'customers'){
-						CustomerController.controllerRouting('id', req, res, role, main_menu);
-					}
-					else if(req.params.menu === 'orders'){
-						OrderController.controllerRouting('id', req, res, role, main_menu);
-					} else res.render(errselect);
-				}
-			});
-  },
-  
+  menu:  function(req, res){
+		var controllerBuff = menuController (req.params.menu);
+		if(req.session.user.role != role) res.render(erraccess);
+		else if(controllerBuff) controllerBuff.controllerRouting('main', req, res, role, main_menu, client);
+		else res.render(errselect);
+	},
+
+  id:  function(req, res){
+		var controllerBuff = menuController (req.params.menu);
+		if(req.session.user.role != role) res.render(erraccess);
+		else if(controllerBuff) controllerBuff.controllerRouting('id', req, res, role, main_menu, client);
+		else res.render(errselect);
+	},
+	
+	
   edit: function(req, res){
-			var valid = new customersval();
-			
-			valid.idInt(req.params.id);
-			
-			valid.on('valid_error', function (err) {
-					res.render(errtype);
-			});
-			
-			valid.on('valid_OK', function () {
-				if(req.session.user.role != role) res.render(erraccess);
-				else {
-					if(req.params.menu === 'customers'){
-					 CustomerController.controllerRouting('edit', req, res, role, main_menu);
-					}else if(req.params.menu === 'orders'){
-					 OrderController.controllerRouting('edit', req, res, role, main_menu);
-					} else res.render(errselect);
-				}
-			});
-  }
+		var controllerBuff = menuController (req.params.menu);
+		if(req.session.user.role != role) res.render(erraccess);
+		else if(controllerBuff) controllerBuff.controllerRouting('edit', req, res, role, main_menu, client);
+		else res.render(errselect);	
+	},
+	
+ upload: function(req, res){
+		if(req.session.user.role != role) res.render(erraccess);
+		else if(req.params.menu === 'buh') BuhController.controllerRouting('upload', req, res, role, main_menu, client);
+		else res.render(errselect);	
+	},
+
+	print: function(req, res){
+		if(req.session.user.role != role) res.render(erraccess);
+		else if(req.params.menu === 'buh') BuhController.controllerRouting('print', req, res, role, main_menu, client);
+		else res.render(errselect);	
+	},
+	
+  date: function(req, res){
+		if(req.session.user.role != role) res.render(erraccess);
+		else if(req.params.menu === 'buh') BuhController.controllerRouting('date', req, res, role, main_menu, client);
+		else res.render(errselect);	
+	}
   
 };
+
+function menuController (menu){
+	var controllerName;
+	switch(menu) {
+	case 'customers': 
+		controllerName = CustomersController;
+		break;
+	case 'orders': 
+		controllerName = OrdersController;
+		break;
+	case 'buh': 
+		controllerName = BuhController;
+		break;
+	default:
+		controllerName = null;
+	}
+	return (controllerName);
+}

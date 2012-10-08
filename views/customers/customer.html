@@ -1,10 +1,11 @@
+	<% this.extend("layout"); %>
 	<script type="text/javascript">
 	$(document).ready(function() {	
 					
-					$("input[name='PHONES']").mask("(999) 999-9999? доб.9999");
-					$("input[name='INDEX_P']").mask("999999");
-					$("input[name='RS']").mask("99999999999999999999");
-					$("input[name='BIK']").mask("999999999");
+					$("input[name='phones']").mask("(999) 999-9999? доб.9999");
+					$("input[name='index']").mask("999999");
+					$("input[name='rs']").mask("99999999999999999999");
+					$("input[name='bik']").mask("999999999");
 					
 					
 					$("input:text").keydown(function (event) {
@@ -45,13 +46,6 @@
 					});
 				
 		<%  if(access ==  1){ %>
-					$("#find_bik").click(function(){
-						var bik = $("input[name='BIK']").attr("value");
-						if(bik!="") socket.emit('find_bik', bik);
-						else $('#bank_data').html('Отсутсвует БИК');
-						return false;						
-					});
-					
 					socket.on('bankbik', function (msg) {
 						$('#bank_data').html(msg);
 					});
@@ -105,17 +99,17 @@
 							flag_valid = false;
 							$('#pbdiv').show();
 							var array_table = $('#'+name_form).serializeArray();
-							if(name_form === 'save_u_address_form') infoaddress = ' '+array_table[0].value+', '+array_table[1].value+', '+array_table[2].value+', '+array_table[3].value+', '+array_table[4].value+'<br><a href="/<%= user.role %>/customers/edit/uaddress/<%- customer.ID  %>">Редактировать</a></p>';
-							if(name_form === 'save_f_address_form') infoaddress = ' '+array_table[0].value+', '+array_table[1].value+', '+array_table[2].value+', '+array_table[3].value+', '+array_table[4].value+'<br><a href="/<%= user.role %>/customers/edit/faddress/<%- customer.ID  %>">Редактировать</a></p>';
-							if(name_form === 'customers_contact_form') infoaddress = array_table;
-							if(name_form === 'customers_bank_form') infoaddress = array_table;
+							if(name_form === "save_u_address_form") infoaddress = ' '+array_table[0].value+', '+array_table[1].value+', '+array_table[2].value+', '+array_table[3].value+', '+array_table[4].value+' <strong>Примечание:</strong> '+array_table[5].value+' <br><a href="/customers/edit/uaddress/<%= customer.c_id %>">Редактировать</a></p>';
+							if(name_form === "save_f_address_form") infoaddress = ' '+array_table[0].value+', '+array_table[1].value+', '+array_table[2].value+', '+array_table[3].value+', '+array_table[4].value+' <strong>Примечание:</strong> '+array_table[5].value+' <br><a href="/customers/edit/faddress/<%= customer.c_id %>">Редактировать</a></p>';
+							if(name_form === "customers_contact_form") infoaddress = array_table;
+							if(name_form === "customers_bank_form") infoaddress = array_table;
 							$('#'+name_form+' *').attr("disabled", true);
 							$('#status').text('Подключение к серверу.').css('color','#333');
 							$('#progressbar').progressbar({ value: 0 });
-							if(name_form ==='customers_contact_form') buff_msg = 'new_contact_save';
-							if(name_form ==='customers_bank_form') buff_msg = 'new_bik_save';
-							if(name_form === 'save_u_address_form' || name_form === 'save_f_address_form') buff_msg = 'new_form_save';
-							var buff_obj = {name:'CUSTOMER_ID', value : '<%- customer.ID  %>'};
+							if(name_form === "customers_contact_form") buff_msg = 'new_contact_save';
+							if(name_form === "customers_bank_form") buff_msg = 'new_bik_save';
+							if(name_form === "save_u_address_form" || name_form === "save_f_address_form") buff_msg = 'new_address_save';
+							var buff_obj = {name:'c_id', value : '<%= customer.c_id %>'};
 							array_table[array_table.length] = buff_obj;
 							buff_arr = array_table;
 							socket.emit(buff_msg, name_form, id, array_table);
@@ -132,14 +126,14 @@
 						}, 6000);
 					});
 					
-					socket.on('end_save', function (id_new_contact) {
+					socket.on('end_save', function (result) {
 						$('#status').text('Данные на сервере сохраненны.');
 						$('#progressbar').progressbar({ value: 70 });
 						$('#'+name_form+' *').attr("disabled", false);
 						$('#status').text('Добовление данных.');
 						if(name_form ==='customers_contact_form'){ 
 							$('#list_contacts').dataTable().fnAddData( [
-								"<a href='/<%= user.role %>/customers/edit/contact/"+id_new_contact+"'>"+infoaddress[0].value+"</a>",
+								"<a href='/customers/edit/contact/"+result+"'>"+infoaddress[0].value+"</a>",
 								infoaddress[1].value,
 								infoaddress[2].value,
 								infoaddress[3].value,
@@ -148,10 +142,10 @@
 						}
 						if(name_form ==='customers_bank_form'){ 
 							$('#list_bank').dataTable().fnAddData( [
-								"<a href='/<%= user.role %>/customers/edit/bank/"+id_new_contact.ID+"'>"+infoaddress[1].value+"</a>",
+								"<a href='/customers/edit/rs/"+infoaddress[1].value+"'>"+infoaddress[1].value+"</a>",
 								infoaddress[0].value,
-								id_new_contact.bankname,
-								id_new_contact.ks
+								'обновите страницу для получения данных',
+								infoaddress[1].value
 							]);
 						}
 						if(name_form ==='save_u_address_form'||name_form ==='save_f_address_form') $('#'+name_form+'_info').html(infoaddress);
@@ -173,7 +167,7 @@
 					$('#save_u_address_div').hide();
 					$('#save_f_address_div').hide();
 					$('#customers_contact_div').hide();
-					$('#customers_bank_div').hide();
+					$('#editform_div').hide();
 					<%  if(uaddress) { %> $('#save_u_address_form_div').hide();<%}%>
 					<%  if(faddress) { %> $('#save_f_address_form_div').hide();<%}%>
 					
@@ -183,25 +177,26 @@
 					
 			});
 	</script>
-	<%- partial('status') %>
-	<h1>Данные о <%  if(customer.FORMA_SOB == 0){ %> физическом лице <strong><%} else {%> компании <strong><%= customer.NAME_SOB %> <%}%> &laquo;<%= customer.NAME %>&raquo;</strong><img id="main_customer" class="openclose" src="/images/sort_asc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<%@ status %>
+	<h1>Данные о  компании <strong><%= customer.name %></strong><img id="main_customer" class="openclose" src="/images/sort_asc.png" width="19" height="19" border="0" title="Открыть"></h1>
 	<div id="main_customer_div"><p>
-	<p><strong>Менеджер:</strong> <%= customer.UNAME %></p>
-	<%  if(customer.FORMA_SOB != 0){ %><strong>ИНН:</strong> <%= customer.INN %> <br><%}%>
-	<strong>Тип контрагента:</strong> <%  if(customer.TYPE === 0){%>Клиент<%} if(customer.TYPE === 1){%>Поставщик<% } if(customer.TYPE === 2){ %>Контрагент<% } %><br>
-	<%  if(customer.FORMA_SOB != 0){ %><strong>КПП:</strong> <%  if(customer.KPP === ""){ %> <span class="warning">нет</span> <%} else {%><%- customer.KPP %> <%}%><br><%}%>
-	<%  if(customer.FORMA_SOB != 0){ %><strong>ОГРН:</strong> <%  if(customer.OGRN === ""){ %> <span class="warning">нет</span> <%} else {%><%- customer.OGRN %> <%}%><br><%}%>
-	<%  if(customer.FORMA_SOB != 0){ %><strong>ОКПО:</strong> <%  if(customer.OKPO === ""){ %> <span class="warning">нет</span> <%} else {%><%- customer.OKPO %> <%}%><br><%}%>
-	<strong>Телефон:</strong> <%  if(customer.PHONES === ""){ %> <span class="warning">нет</span> <%} else {%><%- customer.PHONES %> <%}%><br>
-	<strong>Факс:</strong> <%  if(customer.FAX === ""){ %> <span class="warning">нет</span> <%} else {%><%- customer.FAX %> <%}%><br>
-	<%  if(customer.FORMA_SOB != 0){ %><strong>WWW:</strong> <a href="http://<%- customer.WWW %>"><%- customer.WWW%></a> <br><%}%>
-	<strong>E-mail:</strong> <%  if(customer.EMAIL === ""){ %> <span class="warning">нет</span> <%} else {%><a href="mailto:<%- customer.EMAIL %>" target="_blank"><%- customer.EMAIL %></a> <%}%><br>
-	<strong>Примечание:</strong> <%- customer.NOTE %> </p>
-	<%  if(access ==  1){ %><p><a href="/<%- user.role %>/<%- action2%>/edit/main/<%- customer.ID  %>">Редактировать</a></p><%}%>
+	<p><strong>Менеджер:</strong> <%= customer.fio %></p>
+	<strong>ИНН:</strong> <%= customer.inn %> 
+	<strong>КПП:</strong> <%  if(customer.kpp === ''){ %> <span class="warning">нет</span> <%} else {%><%= customer.kpp %> <%}%>
+	<strong>ОГРН:</strong> <%  if(customer.ogrn === ''){ %> <span class="warning">нет</span> <%} else {%><%= customer.ogrn %> <%}%>
+	<strong>ОКПО:</strong> <%  if(customer.okpo === ''){ %> <span class="warning">нет</span> <%} else {%><%= customer.okpo %> <%}%><br>
+	<strong>Телефон:</strong> <%  if(customer.phones === ''){ %> <span class="warning">нет</span> <%} else {%><%= customer.phones %> <%}%>
+	<strong>Факс:</strong> <%  if(customer.fax === ''){ %> <span class="warning">нет</span> <%} else {%><%= customer.fax %> <%}%>
+	<strong>WWW:</strong> <%  if(customer.www === ''){ %> <span class="warning">нет</span> <%} else {%><a href="http://<%= customer.www %>"><%= customer.www%></a><%}%> 
+	<strong>E-mail:</strong> <%  if(customer.email === ''){ %> <span class="warning">нет</span> <%} else {%><a href="mailto:<%= customer.email %>" target="_blank"><%- customer.email %></a> <%}%><br>
+	<strong>Примечание:</strong> <%= customer.note %> <br>
+	<%  if(access ==  1){ %><a href="/<%= action2%>/edit/main/<%= customer.c_id %>">Редактировать</a><%}%></p>
 	
-	<%  if(customer.FORMA_SOB != 0){%><p><strong>Юридический адрес:</strong> <span id="save_u_address_form_info" > <%  if(uaddress) { %> <%- uaddress.INDEX_P %>, <%- uaddress.CITY %>, <%- uaddress.STREET %>, <%- uaddress.NUMBER_HOUSE %>, <%- uaddress.NUMBER_OFFICE %> <%  if(access ==  1){ %><br><a href="/<%- user.role %>/<%- action2%>/edit/uaddress/<%- customer.ID  %>">Редактировать</a><%}} else {%> <span class="warning">нет</span> <% } %><br></p>
-	</span> <%}%>
-	<p><strong>Фактический адрес:</strong><span id="save_f_address_form_info"> <%  if(faddress) { %> <%- faddress.INDEX_P %>, <%- faddress.CITY %>, <%- faddress.STREET %>, <%- faddress.NUMBER_HOUSE %>, <%- faddress.NUMBER_OFFICE %> <%  if(access ==  1){ %><br><a href="/<%- user.role %>/<%- action2%>/edit/faddress/<%- customer.ID  %>">Редактировать</a><%}} else {%> <span class="warning">нет</span> <% } %><br></p>
+	<p><strong>Юридический адрес:</strong> <span id="save_u_address_form_info" > <%  if(uaddress) { %> <%= uaddress.index %>, <%= uaddress.city %>, <%= uaddress.street %>, д. <%= uaddress.house %>, <%= uaddress.office %> 
+	<strong>Примечание:</strong> <%= uaddress.note %> <%  if(access ==  1){ %><br><a href="/<%= action2%>/edit/uaddress/<%= customer.c_id  %>">Редактировать</a><%}} else {%> <span class="warning">нет</span> <% } %><br></p>
+	</span> 
+	<p><strong>Фактический адрес:</strong><span id="save_f_address_form_info"> <%  if(faddress) { %> <%= faddress.index %>, <%= faddress.city %>, <%= faddress.street %>, д. <%= faddress.house %>, <%= faddress.office %> 
+	<strong>Примечание:</strong> <%= faddress.note %> <%  if(access ==  1){ %><br><a href="/<%= action2%>/edit/faddress/<%= customer.c_id  %>">Редактировать</a><%}} else {%> <span class="warning">нет</span> <% } %><br></p>
 	</span>
 	<div id="radiomenu">
 		<input type="radio" id="radio1" name="radio" checked="checked"/><label for="radio1">Конт. лиц</label>
@@ -220,16 +215,17 @@
 		</tr>
 	</thead>
 	<tbody >
-		<%if(listcontact){%>
-		<% listcontact.forEach (function(contact){ %>
-		<tr class="odd gradeA">
-			<td><a href='/<%= user.role %>/customers/edit/contact/<%= contact.ID %>'><%= contact.FIO %></a></td>
-			<td><%= contact.POSITION %></td>
-			<td><%= contact.PHONES %></td>
-			<td><a href="mailto:<%= contact.EMAIL %>" target="_blank"><%= contact.EMAIL %></a></td>
-			<td><%= contact.NOTE %></td>
+		<%if(contactlist){%>
+		 <%for (var i = 0; i < contactlist.length; i++) {%>
+			<tr class="odd gradeA">
+			<td><a href="/customers/edit/contact/<%= contactlist[i].con_id %>"><%= contactlist[i].fio %></a></td>
+			<td><%= contactlist[i].position %></td>
+			<td><%= contactlist[i].phones %></td>
+			<td><%= contactlist[i].email %></td>
+			<td><%= contactlist[i].note %></td>
 		</tr>
-		<% })}%>
+		<% }} %>
+
 	<tfoot>
 		<tr>
 			<th>ФИО</th>
@@ -254,15 +250,15 @@
 		</tr>
 	</thead>
 	<tbody >
-		<% if(listbank){%>
-		<% listbank.forEach (function(bank){ %>
-		<tr class="odd gradeB">
-			<td><a href='/<%= user.role %>/customers/edit/bank/<%= bank.id %>'><%= bank.rs %></a></td>
-			<td><%= bank.bik %></td>
-			<td><%= bank.bankname %></td>
-			<td><%= bank.ks %></td>
+		 <%if(rslist){%>
+		 <%for (var i = 0; i < rslist.length; i++) {%>
+			<tr class="odd gradeB">
+			<td><%= rslist[i].rs %></td>
+			<td><%= rslist[i].bik %></td>
+			<td><%= rslist[i].name %></td>
+			<td><%= rslist[i].ks %></td>
 		</tr>
-		<% })}%>
+		<% }} %>
 	<tfoot>
 		<tr>
 			<th>р/с</th>
@@ -275,8 +271,9 @@
 	</table>
 	</div>
 	</div>
-	<%  if(access ==  1){ %>
-	<%  if(customer.FORMA_SOB != 0){%>
+	<%  if(access ===  1){ %>
+	<h1>Формы редактирования:<img id="editform" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
+	<div id="editform_div">
 	<div id="save_u_address_form_div">
 	<h1>Добавить юридический адрес:<img id="save_u_address" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
 	<div id="save_u_address_div">
@@ -284,23 +281,27 @@
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
 	  <tr>
 		<td align="right">Индекс:*</td>
-		<td><input name="INDEX_P" type="text" size="25" class="required"></td>
+		<td><input name="index" type="text" size="25" class="required"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Город:*</td>
-		<td><input name="CITY" id="inp_spbcity" type="text" size="25" class="required"><br><a id="spbcity" href="/">Санкт-Петербург г<a/></td>
+		<td><input name="city" id="inp_spbcity" type="text" size="25" class="required"><br><a id="spbcity" href="/">Санкт-Петербург г<a/></td>
 	  </tr>
 	  <tr>
 		<td width="20%" align="right">Улица:*</td>
-		<td width="80%"><input name="STREET" type="text" size="25" class="required"></td>
+		<td width="80%"><input name="street" type="text" size="25" autocomplete="off" class="required"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Номер дома:*</td>
-		<td><input name="NUMBER_HOUSE" type="text" size="25" class="required"></td>
+		<td><input name="house" type="text" size="25" autocomplete="off"class="required"></td>
 	  </tr>
 	  <tr>
-		<td align="right">Номер офиса*:</td>
-		<td><input name="NUMBER_OFFICE" type="text" size="25" class="required"></td>
+		<td align="right">Номер офиса:</td>
+		<td><input name="office" type="text" size="25" autocomplete="off"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Примечание:</td>
+		<td><input name="note" type="text" size="30" autocomplete="off"></td>
 	  </tr>
 	  <tr>
 		<td align="right"></td>
@@ -310,7 +311,6 @@
 	</form>
 	</div>
 	</div>
-	<%}%>
 	<div id="save_f_address_form_div">
 	<h1>Добавить фактический адрес:<img id="save_f_address" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
 		<div id="save_f_address_div">
@@ -318,23 +318,27 @@
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
 	  <tr>
 		<td align="right">Индекс:*</td>
-		<td><input name="INDEX_P" type="text" size="25" class="required"></td>
+		<td><input name="index" type="text" size="25" class="required"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Город:*</td>
-		<td><input name="CITY" id="inp_spbcity2" type="text" size="25" class="required"><br><a id="spbcity2" href="/">Санкт-Петербург г<a/></td>
+		<td><input name="city" id="inp_spbcity2" type="text" size="25" class="required"><br><a id="spbcity2" href="/">Санкт-Петербург г<a/></td>
 	  </tr>
 	  <tr>
 		<td width="20%" align="right">Улица:*</td>
-		<td width="80%"><input name="STREET" type="text" size="25" class="required"></td>
+		<td width="80%"><input name="street" type="text" size="25" autocomplete="off" class="required"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Дом:*</td>
-		<td><input name="NUMBER_HOUSE" type="text" size="25" class="required"></td>
+		<td><input name="house" type="text" size="25" class="required" autocomplete="off"></td>
 	  </tr>
 	  <tr>
-		<td align="right">Офис*:</td>
-		<td><input name="NUMBER_OFFICE" type="text" size="25" class="required"></td>
+		<td align="right">Офис:</td>
+		<td><input name="office" type="text" size="25" autocomplete="off"></td>
+	  </tr>
+	  <tr>
+		<td align="right">Примечание:</td>
+		<td><input name="note" type="text" size="30" autocomplete="off"></td>
 	  </tr>
 	  <tr>
 		<td align="right"></td>
@@ -350,23 +354,23 @@
 	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
 	  <tr>
 		<td align="right">Фамилия Имя Отчество:*</td>
-		<td><input name="FIO " type="text" size="30" class="required"></td>
+		<td><input name="fio" type="text" size="30" autocomplete="off" class="required"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Должность:</td>
-		<td><input name="POSITION" type="text" size="30"></td>
+		<td><input name="position" type="text" size="30" autocomplete="off"></td>
 	  </tr>
 	  <tr>
 		<td width="20%" align="right">Телефон:</td>
-		<td width="80%"><input name="PHONES" type="text" size="30"></td>
+		<td width="80%"><input name="phones" type="text" size="30"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Электронная почта:</td>
-		<td><input name="EMAIL" type="text" size="30" class="email"></td>
+		<td><input name="email" type="text" size="30" class="email" autocomplete="off"></td>
 	  </tr>
 	  <tr>
 		<td align="right">Примечание:</td>
-		<td><textarea name="NOTE" cols="60" rows="5"></textarea></td>
+		<td><textarea name="note" cols="60" rows="5"></textarea></td>
 	  </tr>
 	  <tr>
 		<td align="right"></td>
@@ -375,27 +379,5 @@
 	</table>
 	</form>
 	</div>
-	<h1>Добавить банковские реквизиты:<img id="customers_bank" class="openclose" src="/images/sort_desc.png" width="19" height="19" border="0" title="Открыть"></h1>
-	<div id="customers_bank_div">
-	<form method="post" id="customers_bank_form" action="/">
-	<table width="100%"  border="0" cellpadding="4" cellspacing="4">
-	  <tr>
-		<td align="right" width="20%">БИК:*</td>
-		<td idth="80%"><input name="BIK" type="text" size="30" class="required">&nbsp;<a id="find_bik" href="/">проверка банка<a/></td>
-	  </tr>
-	  <tr>
-		<td align="right">Данные по банку:</td>
-		<td><div id="bank_data"><div></td>
-	  </tr>
-	  <tr>
-		<td align="right">р/с:*</td>
-		<td><input name="RS" type="text" size="30" class="required"></td>
-	  <tr>
-		<td align="right"></td>
-		<td><button type="subbutton" id="sub_bank">Сохранить</button></td>
-	  </tr>
-	  </tr>
-	</table>
-	</form>
 	</div>
 	<%}%>

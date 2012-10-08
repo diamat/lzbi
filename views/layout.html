@@ -7,7 +7,7 @@
     <link type="text/css" href="/stylesheets/main_page.css" rel="stylesheet" />
 	<link type="text/css" href="/stylesheets/table.css" rel="stylesheet" />
 	<link type="text/css" href="/stylesheets/jquery-ui-1.8.16.custom.css" rel="stylesheet" />
-	<script type="text/javascript" src="/javascripts/socket.io.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
 	<script type="text/javascript" src="/javascripts/jquery.js"></script>
 	<script type="text/javascript" src="/javascripts/jquery.datatables.js"></script>
 	<script type="text/javascript" src="/javascripts/jquery-ui.js"></script>
@@ -15,6 +15,7 @@
 	<script type="text/javascript" src="/javascripts/charcount.js"></script>
 	<script type="text/javascript" src="/javascripts/jquery.maskedinput.js"></script>
 	<script type="text/javascript" src="/javascripts/ui.datepicker-ru.js"></script>
+	<script type="text/javascript" src="/javascripts/jquery.tablednd.js"></script>
 	<!--[if IE]><script language="javascript" type="text/javascript" src="/javascripts/excanvas.min.js"></script><![endif]-->
 	<script language="javascript" type="text/javascript" src="/javascripts/jquery.flot.js"></script>
 	<script language="javascript" type="text/javascript" src="/javascripts/my.sort.url.js"></script>
@@ -29,11 +30,7 @@
 		socket.emit('set session hash', {username: '<%= user.username %>', hash:'<%= user.hash%>', lastaccess:'<%= user.lastaccess%>'});
 		$('#err-disconnect').hide();
 	});
-	
-	socket.on('<%= user.lastaccess%>', function () {
-				socket.emit('msg');
-		});
-	
+
 	socket.on('connect_ok', function () {	
 		<% if(edit != "нет") {%>socket.emit('editdoc', '<%= edit.field %>', '<%= edit.value %>');<%}%>
 		if (buff_msg != 'not') socket.emit(buff_msg, name_form , id,  buff_arr);
@@ -90,8 +87,8 @@
  </head>
 	<body id="main_style">
 		<div id="container">
-		<%- partial('header') %>
-		<%- body %>
+		<%@ header %>
+		<%*%>
 	<div>
   </body>
 </html>
